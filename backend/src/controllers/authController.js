@@ -3,7 +3,8 @@ import { hashPassword, generateToken } from '../utils/auth.js';
 import { validateSignupStepPayload } from '../validation/schemas.js';
 
 const PROFILE_BUCKET = process.env.SUPABASE_PROFILE_BUCKET || 'profile-photos';
-const USER_SELECT_FIELDS = 'id, email, first_name, last_name, role, profile_picture_url';
+const USER_SELECT_FIELDS = 'id, email, first_name, last_name, role, profile_picture_url, is_active';
+const EMAIL_VERIFY_REDIRECT_URL = process.env.EMAIL_VERIFY_REDIRECT_URL || process.env.CORS_ORIGIN || 'http://localhost:5173';
 
 const minimalUserResponse = (user) => ({
   userId: user.id,
@@ -115,6 +116,13 @@ const insertUserWithFallback = async (payload) => {
     delete workingPayload[missingColumn];
   }
 };
+
+const sendSignupVerificationEmail = async (email) =>
+  supabaseClient.auth.resend({
+    type: 'signup',
+    email,
+    options: { emailRedirectTo: EMAIL_VERIFY_REDIRECT_URL }
+  });
 
 // Validate signup step (server-side validation for each step)
 export const validateSignupStep = async (req, res) => {
@@ -277,7 +285,6 @@ export const signUp = async (req, res) => {
       });
     }
 
-    // Generate JWT token
     const insertedUser = userData?.[0] || {
       id: authData.user.id,
       email,
@@ -286,15 +293,17 @@ export const signUp = async (req, res) => {
       role: requestedRole,
       profile_picture_url: uploadedPhotoUrl
     };
-    const resolvedUserType = insertedUser.role || requestedRole;
-    const token = generateToken(authData.user.id, email, resolvedUserType);
+
+    const { error: verificationError } = await sendSignupVerificationEmail(email);
 
     return res.status(201).json({
       success: true,
-      message: 'User registered successfully',
+      message: verificationError
+        ? 'Account created. Verification email could not be sent right now.'
+        : 'Account created. Please verify your email before logging in.',
       data: {
         ...minimalUserResponse(insertedUser),
-        token
+        pendingVerification: true
       }
     });
   } catch (error) {
@@ -305,6 +314,7 @@ export const signUp = async (req, res) => {
     });
   }
 };
+
 
 // Login
 export const login = async (req, res) => {
@@ -324,6 +334,15 @@ export const login = async (req, res) => {
       });
     }
 
+    if (!authData?.user?.email_confirmed_at) {
+      await supabaseClient.auth.signOut();
+      return res.status(403).json({
+        success: false,
+        code: 'EMAIL_NOT_VERIFIED',
+        message: 'Please verify your email before logging in.'
+      });
+    }
+
     // Get user details
     const { data: userData, error: dbError } = await supabaseAdmin
       .from('users')
@@ -338,8 +357,18 @@ export const login = async (req, res) => {
       });
     }
 
-    // Generate JWT token
     const resolvedUserType = userData.role || 'applicant';
+
+    if (['applicant', 'scholar'].includes(resolvedUserType) && !userData.is_active) {
+      await supabaseClient.auth.signOut();
+      return res.status(403).json({
+        success: false,
+        code: 'ACCOUNT_INACTIVE',
+        message: 'Your account is inactive. Please contact support.'
+      });
+    }
+
+    // Generate JWT token
     const token = generateToken(authData.user.id, email, resolvedUserType);
 
     return res.status(200).json({
@@ -358,6 +387,7 @@ export const login = async (req, res) => {
     });
   }
 };
+
 
 // Get current user
 export const getCurrentUser = async (req, res) => {

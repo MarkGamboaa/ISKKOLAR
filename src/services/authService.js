@@ -41,6 +41,13 @@ export const login = async (email, password) => {
       };
     }
   } catch (error) {
+    if (error.response?.status === 403 && error.response?.data?.code === "EMAIL_NOT_VERIFIED") {
+      throw new Error("Please verify your email first. Check your inbox for the verification link.");
+    }
+    if (error.response?.status === 403 && error.response?.data?.code === "ACCOUNT_INACTIVE") {
+      throw new Error("Your account is inactive. Please contact support.");
+    }
+
     throw new Error(
       error.response?.data?.message || "Invalid credentials. Please check your email and password."
     );
@@ -84,20 +91,9 @@ export const register = async (userData) => {
     });
 
     if (response.data.success) {
-      const { data } = response.data;
-      // Store token in localStorage
-      localStorage.setItem("token", data.token);
       return {
-        token: data.token,
-        user: {
-          id: data.userId,
-          firstName: data.firstName,
-          lastName: data.lastName,
-          email: data.email,
-          userType: data.userType,
-          profilePictureUrl: data.profilePictureUrl,
-        },
-        message: "Account created successfully!",
+        pendingVerification: true,
+        message: response.data.message || "Account created. Please verify your email before logging in.",
       };
     }
   } catch (error) {
