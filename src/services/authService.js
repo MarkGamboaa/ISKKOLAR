@@ -1,52 +1,181 @@
-import { mockUsers } from "../utils/mockData";
+import api from "./api";
 
-const delay = (ms = 500) => new Promise((resolve) => setTimeout(resolve, ms));
+export const validateSignupStep = async (step, formData) => {
+  try {
+    const response = await api.post("/auth/signup/validate-step", {
+      step,
+      formData,
+    });
 
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || {
+      success: false,
+      message: error.message || "Step validation failed.",
+    };
+  }
+};
+
+// Login
 export const login = async (email, password) => {
-  await delay();
-  const user = mockUsers.find(
-    (u) => u.email === email && u.password === password
-  );
-  if (!user) {
-    throw new Error("Invalid credentials. Please check your email and password.");
+  try {
+    const response = await api.post("/auth/login", {
+      email,
+      password,
+    });
+
+    if (response.data.success) {
+      const { data } = response.data;
+      // Store token in localStorage
+      localStorage.setItem("token", data.token);
+      return {
+        token: data.token,
+        user: {
+          id: data.userId,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          userType: data.userType,
+          profilePictureUrl: data.profilePictureUrl,
+        },
+      };
+    }
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.message || "Invalid credentials. Please check your email and password."
+    );
   }
-  if (user.status === "inactive") {
-    throw new Error("Your account has been deactivated. Please contact the administrator.");
-  }
-  const { password: _, ...userWithoutPassword } = user;
-  return {
-    token: "mock-jwt-token-" + user.id,
-    user: userWithoutPassword,
-  };
 };
 
+// Register
 export const register = async (userData) => {
-  await delay();
-  const exists = mockUsers.find((u) => u.email === userData.email);
-  if (exists) {
-    throw new Error("An account with this email already exists.");
+  try {
+    const formData = new FormData();
+
+    formData.append("email", userData.email || "");
+    formData.append("password", userData.password || "");
+    formData.append("confirmPassword", userData.confirmPassword || "");
+    formData.append("firstName", userData.firstName || "");
+    formData.append("middleName", userData.middleName || "");
+    formData.append("lastName", userData.lastName || "");
+    formData.append("suffix", userData.suffix || "");
+    formData.append("birthday", userData.birthday || "");
+    formData.append("gender", userData.gender || "");
+    formData.append("civilStatus", userData.civilStatus || "");
+    formData.append("citizenship", userData.citizenship || "");
+    formData.append("mobileNumber", userData.mobileNumber || "");
+    formData.append("facebook", userData.facebook || "");
+    formData.append("street", userData.street || "");
+    formData.append("barangay", userData.barangay || "");
+    formData.append("city", userData.city || "");
+    formData.append("province", userData.province || "");
+    formData.append("country", userData.country || "");
+    formData.append("zipCode", userData.zipCode || "");
+    formData.append("userType", userData.userType || "applicant");
+
+    if (userData.profilePhoto instanceof File) {
+      formData.append("profilePhoto", userData.profilePhoto);
+    }
+
+    const response = await api.post("/auth/signup", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    if (response.data.success) {
+      const { data } = response.data;
+      // Store token in localStorage
+      localStorage.setItem("token", data.token);
+      return {
+        token: data.token,
+        user: {
+          id: data.userId,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          userType: data.userType,
+          profilePictureUrl: data.profilePictureUrl,
+        },
+        message: "Account created successfully!",
+      };
+    }
+  } catch (error) {
+    throw (
+      error.response?.data || {
+        success: false,
+        message: "Failed to create account. Please try again.",
+      }
+    );
   }
-  const newUser = {
-    id: mockUsers.length + 1,
-    firstName: userData.firstName,
-    lastName: userData.lastName,
-    email: userData.email,
-    password: userData.password,
-    role: userData.userType || "applicant",
-    scholarshipType: userData.scholarshipType || null,
-    status: "active",
-    applicationStatus: "pending",
-    createdAt: new Date().toISOString(),
-  };
-  mockUsers.push(newUser);
-  return { message: "Account created successfully! You can now log in." };
 };
 
+// Forgot Password
 export const forgotPassword = async (email) => {
-  await delay();
-  const user = mockUsers.find((u) => u.email === email);
-  if (!user) {
-    throw new Error("No account found with this email address.");
+  try {
+    const response = await api.post("/auth/forgot-password", {
+      email,
+    });
+
+    if (response.data.success) {
+      return {
+        message: "A password reset link has been sent to your email.",
+      };
+    }
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.message || "Failed to process password reset request."
+    );
   }
-  return { message: "A password reset link has been sent to your email." };
+};
+
+// Get Current User
+export const getCurrentUser = async (token) => {
+  try {
+    const response = await api.get("/auth/me", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.data.success) {
+      return {
+        id: response.data.data.userId,
+        firstName: response.data.data.firstName,
+        lastName: response.data.data.lastName,
+        email: response.data.data.email,
+        userType: response.data.data.userType,
+        profilePictureUrl: response.data.data.profilePictureUrl,
+      };
+    }
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.message || "Failed to fetch user data."
+    );
+  }
+};
+
+// Logout
+export const logout = async (token) => {
+  try {
+    const response = await api.post(
+      "/auth/logout",
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (response.data.success) {
+      // Clear token from localStorage
+      localStorage.removeItem("token");
+      return response.data;
+    }
+  } catch (error) {
+    // Clear token even if logout request fails
+    localStorage.removeItem("token");
+    throw new Error(error.response?.data?.message || "Logout failed.");
+  }
 };
