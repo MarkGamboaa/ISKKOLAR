@@ -15,15 +15,16 @@ export const useAuth = () => {
 const getRoleDashboard = (role) => {
   switch (role) {
     case "admin":
-      return "/dashboard/admin";
-    case "staff":
-      return "/dashboard/staff";
-    case "scholar":
+  return "/dashboard/admin";
     case "applicant":
-      return "/dashboard/scholar";
+  return "/dashboard/applicant";
+    case "scholar":
+  return "/dashboard/scholar";
+    case "staff":
+  return "/dashboard/staff";
     default:
-      return "/";
-  }
+  return "/";
+}
 };
 
 export const AuthProvider = ({ children }) => {
@@ -55,7 +56,7 @@ export const AuthProvider = ({ children }) => {
     setUser(response.user);
     localStorage.setItem("token", response.token);
     localStorage.setItem("user", JSON.stringify(response.user));
-    navigate(getRoleDashboard(response.user.role));
+    navigate(getRoleDashboard(response.user.userType));
   };
 
   const logout = () => {

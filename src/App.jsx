@@ -34,12 +34,19 @@ function App() {
           </PrivateRoute>
         }
       />
-
+      <Route
+        path="/dashboard/applicant/*"
+        element={
+          <PrivateRoute allowedRoles={["applicant"]}>
+            <ScholarDashboard />
+          </PrivateRoute>
+        }
+/>
       {/* Protected — Scholar / Applicant */}
       <Route
         path="/dashboard/scholar/*"
         element={
-          <PrivateRoute allowedRoles={["scholar", "applicant"]}>
+          <PrivateRoute allowedRoles={["scholar"]}>
             <ScholarDashboard />
           </PrivateRoute>
         }

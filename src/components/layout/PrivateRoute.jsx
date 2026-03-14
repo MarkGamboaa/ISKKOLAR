@@ -13,8 +13,8 @@ const PrivateRoute = ({ children, allowedRoles }) => {
     return <Navigate to="/" replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(user?.role)) {
-    return <Navigate to={getRoleDashboard(user?.role)} replace />;
+  if (allowedRoles && !allowedRoles.includes(user?.userType)) {
+    return <Navigate to={getRoleDashboard(user?.userType)} replace />;
   }
 
   return children;

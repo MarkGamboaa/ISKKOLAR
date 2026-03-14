@@ -8,6 +8,7 @@ const SignupPage = () => {
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
   const [success, setSuccess] = useState(false);
+  
 
   const [form, setForm] = useState({
     firstName: "",
@@ -29,46 +30,93 @@ const SignupPage = () => {
     zipCode: "",
     password: "",
     confirmPassword: "",
-    profilePhoto: null
+    profilePhoto: ""
   });
 
   const [errors, setErrors] = useState({});
+  const [isOtherCitizenship, setIsOtherCitizenship] = useState(false);
+  
 
-  const handleNext = () => {
-    // Basic validation per step can go here
+  const scrollTop = () => window.scrollTo(0, 0);
+
+  const clearFieldError = (field) => {
+    setErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
+
+  const mapServerErrors = (error) => {
+    const serverErrors = {};
+
+    if (!Array.isArray(error?.errors)) {
+      return serverErrors;
+    }
+
+    error.errors.forEach((item) => {
+      if (item.field) {
+        serverErrors[item.field] = item.message;
+      }
+    });
+
+    return serverErrors;
+  };
+
+  const handleNext = async () => {
+    try {
+      await authService.validateSignupStep(step, form);
+    } catch (error) {
+      setErrors(mapServerErrors(error));
+
+      setApiError(error.message || "Please check your inputs and try again.");
+      return;
+    }
+
+    setErrors({});
+    setApiError("");
     setStep((prev) => prev + 1);
-    window.scrollTo(0, 0);
+    scrollTop();
   };
 
   const handleBack = () => {
     setStep((prev) => prev - 1);
-    window.scrollTo(0, 0);
+    scrollTop();
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
-    setErrors((prev) => ({ ...prev, [name]: "" }));
+    clearFieldError(name);
   };
 
   const handleFileChange = (e) => {
-    setForm((prev) => ({ ...prev, profilePhoto: e.target.files[0] }));
+    const file = e.target.files?.[0] || null;
+
+    if (!file) {
+      setForm((prev) => ({ ...prev, profilePhoto: "" }));
+      return;
+    }
+
+    setForm((prev) => ({ ...prev, profilePhoto: file }));
+    clearFieldError("profilePhoto");
+    setApiError("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (form.password !== form.confirmPassword) {
-      setErrors({ confirmPassword: "Passwords do not match" });
-      return;
-    }
 
     setLoading(true);
     setApiError("");
+    setErrors({});
     try {
       await authService.register({ ...form, userType: "applicant" });
       setSuccess(true);
     } catch (err) {
-      setApiError(err.message);
+      setErrors(mapServerErrors(err));
+
+      setApiError(err.message || "Failed to create account. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -119,7 +167,16 @@ const SignupPage = () => {
             ))}
           </div>
 
-          <form onSubmit={step === 4 ? handleSubmit : (e) => { e.preventDefault(); handleNext(); }}>
+          <form
+            onSubmit={
+              step === 4
+                ? handleSubmit
+                : async (e) => {
+                    e.preventDefault();
+                    await handleNext();
+                  }
+            }
+          >
             
             {/* Step 1: Account Setup */}
             {step === 1 && (
@@ -140,8 +197,9 @@ const SignupPage = () => {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
                       </div>
-                      <input type="email" name="email" value={form.email} onChange={handleChange} placeholder="Email" className="w-full border border-gray-200 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]" required />
+                      <input type="email" name="email" value={form.email} onChange={handleChange} placeholder="Email" className="w-full border border-gray-200 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]" />
                     </div>
+                    {errors.email && <span className="text-red-500 text-xs mt-1 block">{errors.email}</span>}
                     <p className="text-xs text-gray-400 mt-1.5">We'll use this to verify your account</p>
                   </div>
 
@@ -154,13 +212,14 @@ const SignupPage = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                           </svg>
                         </div>
-                        <input type="password" name="password" value={form.password} onChange={handleChange} placeholder="********" className="w-full border border-gray-200 rounded-lg pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]" required />
+                        <input type="password" name="password" value={form.password} onChange={handleChange} placeholder="********" className="w-full border border-gray-200 rounded-lg pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]"  />
                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer">
                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-400 hover:text-gray-600">
                              <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
                            </svg>
                         </div>
                       </div>
+                      {errors.password && <span className="text-red-500 text-xs mt-1 block">{errors.password}</span>}
                       <p className="text-xs text-gray-400 mt-1.5">Use 8+ characters with mix of letters, numbers & symbols</p>
                     </div>
                     <div>
@@ -171,7 +230,7 @@ const SignupPage = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                           </svg>
                         </div>
-                        <input type="password" name="confirmPassword" value={form.confirmPassword} onChange={handleChange} placeholder="********" className="w-full border border-gray-200 rounded-lg pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]" required />
+                        <input type="password" name="confirmPassword" value={form.confirmPassword} onChange={handleChange} placeholder="********" className="w-full border border-gray-200 rounded-lg pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]" />
                          <div className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer">
                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-400 hover:text-gray-600">
                              <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
@@ -202,16 +261,26 @@ const SignupPage = () => {
                 <div className="space-y-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Profile Photo</label>
-                    <div className="border border-dashed border-gray-300 rounded-lg p-6 flex justify-center items-center bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors">
-                      <span className="text-gray-600 text-sm font-medium">File Upload</span>
-                      <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
-                    </div>
+                    <label htmlFor="profile-photo-input" className="border border-dashed border-gray-300 rounded-lg p-6 flex justify-center items-center bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors">
+                      <span className="text-gray-600 text-sm font-medium">
+                        {form.profilePhoto ? form.profilePhoto.name : "File Upload"}
+                      </span>
+                    </label>
+                    {errors.profilePhoto && <span className="text-red-500 text-xs mt-1 block">{errors.profilePhoto}</span>}
+                    <input
+                      id="profile-photo-input"
+                      type="file"
+                      className="hidden"
+                      accept="image/jpeg,image/png"
+                      onChange={handleFileChange}
+                    />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                      <input name="firstName" value={form.firstName} onChange={handleChange} placeholder="Enter First Name" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]" required />
+                      <input name="firstName" value={form.firstName} onChange={handleChange} placeholder="Enter First Name" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]"  />
+                      {errors.firstName && <span className="text-red-500 text-xs mt-1 block">{errors.firstName}</span>}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Middle Name (Optional)</label>
@@ -219,7 +288,8 @@ const SignupPage = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                      <input name="lastName" value={form.lastName} onChange={handleChange} placeholder="Last Name" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]" required />
+                      <input name="lastName" value={form.lastName} onChange={handleChange} placeholder="Last Name" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]"  />
+                      {errors.lastName && <span className="text-red-500 text-xs mt-1 block">{errors.lastName}</span>}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Suffix (Optional)</label>
@@ -228,31 +298,60 @@ const SignupPage = () => {
                         <option value="Jr.">Jr.</option>
                         <option value="Sr.">Sr.</option>
                         <option value="III">III</option>
+                        <option value="IV">IV</option>
                       </select>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Birthday</label>
-                      <input type="date" name="birthday" value={form.birthday} onChange={handleChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97] text-gray-700" required />
+                      <input type="date" name="birthday" value={form.birthday} onChange={handleChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97] text-gray-700"  />
+                      {errors.birthday && <span className="text-red-500 text-xs mt-1 block">{errors.birthday}</span>}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Citizenship</label>
-                      <input type="text" name="citizenship" value={form.citizenship} onChange={handleChange} placeholder="Enter Citizenship" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]" required />
+                      <select name="citizenship" value={isOtherCitizenship ? "Other" : form.citizenship} onChange={(e) => {const val = e.target.value;
+                        if (val === "Other") {setIsOtherCitizenship(true);
+                      // Clear the actual value so they start fresh in the input
+                          handleChange({ target: { name: 'citizenship', value: '' } });
+                        } else {
+                          setIsOtherCitizenship(false);
+                          handleChange(e);
+                        }
+                        }} 
+                        className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97] bg-white text-gray-700">
+                      <option value="">Select</option>
+                      <option value="Filipino">Filipino</option>
+                      <option value="Other">Other</option>
+                      </select>
+
+                      {/* Show the text input ONLY if 'Other' was selected */}
+                      {isOtherCitizenship && (
+                      <div className="mt-2">
+                      <input type="text" name="citizenship" placeholder="Please specify citizenship" value={form.citizenship} onChange={handleChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97] bg-white text-gray-700" autoFocus />
+                      <button type="button" onClick={() => { setIsOtherCitizenship(false); handleChange({ target: { name: 'citizenship', value: 'Filipino' } }); }} className="text-[10px] text-gray-400 underline mt-1">
+                      Back to preset options
+                      </button>
+                    </div>
+                      )}
+
+                    {errors.citizenship && <span className="text-red-500 text-xs mt-1 block">{errors.citizenship}</span>}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-                      <select name="gender" value={form.gender} onChange={handleChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97] bg-white text-gray-700" required>
+                      <select name="gender" value={form.gender} onChange={handleChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97] bg-white text-gray-700" >
                         <option value="">Select</option>
                         <option value="Male">Male</option>
                         <option value="Female">Female</option>
                       </select>
+                      {errors.gender && <span className="text-red-500 text-xs mt-1 block">{errors.gender}</span>}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Civil Status</label>
-                      <select name="civilStatus" value={form.civilStatus} onChange={handleChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97] bg-white text-gray-700" required>
+                      <select name="civilStatus" value={form.civilStatus} onChange={handleChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97] bg-white text-gray-700" >
                         <option value="">Select</option>
                         <option value="Single">Single</option>
                         <option value="Married">Married</option>
                       </select>
+                      {errors.civilStatus && <span className="text-red-500 text-xs mt-1 block">{errors.civilStatus}</span>}
                     </div>
                   </div>
                 </div>
@@ -287,12 +386,13 @@ const SignupPage = () => {
                         }} 
                         placeholder="Enter Mobile Number" 
                         className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]" 
-                        required 
                       />
+                      {errors.mobileNumber && <span className="text-red-500 text-xs mt-1 block">{errors.mobileNumber}</span>}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Facebook</label>
-                      <input name="facebook" value={form.facebook} onChange={handleChange} placeholder="Enter Facebook link" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]" />
+                      <input type="text" name="facebook" value={form.facebook} onChange={handleChange} placeholder="Enter Facebook link"  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]" />
+                      {errors.facebook && <span className="text-red-500 text-xs mt-1 block">{errors.facebook}</span>}
                     </div>
                   </div>
 
@@ -303,29 +403,35 @@ const SignupPage = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                      <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Street/Unit</label>
-                      <input type="text" name="street" value={form.street} onChange={handleChange} placeholder="Enter Street/Unit" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]" required />
+                      <input type="text" name="street" value={form.street} onChange={handleChange} placeholder="Enter Street/Unit" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]"  />
+                      {errors.street && <span className="text-red-500 text-xs mt-1 block">{errors.street}</span>}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Barangay</label>
-                      <input type="text" name="barangay" value={form.barangay} onChange={handleChange} placeholder="Enter Barangay" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]" required />
+                      <input type="text" name="barangay" value={form.barangay} onChange={handleChange} placeholder="Enter Barangay" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]" />
+                      {errors.barangay && <span className="text-red-500 text-xs mt-1 block">{errors.barangay}</span>}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                      <input type="text" name="city" value={form.city} onChange={handleChange} placeholder="Enter City" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]" required />
+                      <input type="text" name="city" value={form.city} onChange={handleChange} placeholder="Enter City" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]"  />
+                      {errors.city && <span className="text-red-500 text-xs mt-1 block">{errors.city}</span>}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Province</label>
-                      <input type="text" name="province" value={form.province} onChange={handleChange} placeholder="Enter Province" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]" required />
+                      <input type="text" name="province" value={form.province} onChange={handleChange} placeholder="Enter Province" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]" />
+                      {errors.province && <span className="text-red-500 text-xs mt-1 block">{errors.province}</span>}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
                       <select name="country" value={form.country} onChange={handleChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97] bg-white text-gray-700">
                         <option value="Philippines">Philippines</option>
                       </select>
+                      {errors.country && <span className="text-red-500 text-xs mt-1 block">{errors.country}</span>}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Zip Code</label>
-                      <input name="zipCode" value={form.zipCode} onChange={handleChange} placeholder="Enter Zip Code" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]" required />
+                      <input name="zipCode" value={form.zipCode} onChange={handleChange} placeholder="Enter Zip Code" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]" />
+                      {errors.zipCode && <span className="text-red-500 text-xs mt-1 block">{errors.zipCode}</span>}
                     </div>
                   </div>
                 </div>
