@@ -2,7 +2,8 @@ import Joi from 'joi';
 
 const EMAIL_MESSAGE = 'Please provide a valid email address';
 const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
-const MOBILE_PATTERN = /^\d{11}$/;
+const MOBILE_PATTERN = /^0\d{10}$/;
+const FACEBOOK_PATTERN = /^https?:\/\/(www\.)?facebook\.com\/.+/;
 export const PROFILE_PHOTO_MAX_FILE_SIZE = 5 * 1024 * 1024;
 export const PROFILE_PHOTO_ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png'];
 
@@ -64,14 +65,6 @@ export const validateProfilePhotoMetadata = (profilePhoto) => {
     return 'Upload profile photo is required';
   }
 
-  if (typeof profilePhoto !== 'object') {
-    return 'Upload profile photo is required';
-  }
-
-  if (!profilePhoto.name) {
-    return 'Upload profile photo is required';
-  }
-
   if (!PROFILE_PHOTO_ALLOWED_MIME_TYPES.includes(profilePhoto.type)) {
     return 'Only JPEG and PNG images are allowed';
   }
@@ -118,7 +111,9 @@ export const signUpValidation = Joi.object({
   civilStatus: enumField(['Single', 'Married'], 'Civil status', 'Civil status must be Single or Married'),
   citizenship: requiredText('Citizenship'),
   mobileNumber: mobileField('Mobile number must start with 0 and contain 11 digits'),
-  facebook: requiredText('Facebook account'),
+  facebook: Joi.string().pattern(FACEBOOK_PATTERN).required().messages({
+    'string.pattern.base': 'Facebook link must be a valid URL starting with http:// or https:// and contain facebook.com',
+  }),
   street: requiredText('Street/Unit'),
   barangay: requiredText('Barangay'),
   city: requiredText('City'),
@@ -171,7 +166,9 @@ const signUpStepTwoValidation = Joi.object({
 
 const signUpStepThreeValidation = Joi.object({
   mobileNumber: mobileField('Mobile number must start with 0 and contain 11 digits'),
-  facebook: requiredText('Facebook account'),
+  facebook: Joi.string().pattern(FACEBOOK_PATTERN).required().messages({
+    'string.pattern.base': 'Facebook link must be a valid URL starting with http:// or https:// and contain facebook.com',
+  }),
   street: requiredText('Street'),
   barangay: requiredText('Barangay'),
   city: requiredText('City'),
