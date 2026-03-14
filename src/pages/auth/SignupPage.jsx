@@ -29,7 +29,7 @@ const SignupPage = () => {
     zipCode: "",
     password: "",
     confirmPassword: "",
-    profilePhoto: null
+    profilePhoto: ""
   });
 
   const [errors, setErrors] = useState({});
@@ -45,23 +45,27 @@ const SignupPage = () => {
     });
   };
 
+  const mapServerErrors = (error) => {
+    const serverErrors = {};
+
+    if (!Array.isArray(error?.errors)) {
+      return serverErrors;
+    }
+
+    error.errors.forEach((item) => {
+      if (item.field) {
+        serverErrors[item.field] = item.message;
+      }
+    });
+
+    return serverErrors;
+  };
+
   const handleNext = async () => {
     try {
       await authService.validateSignupStep(step, form);
     } catch (error) {
-      const serverErrors = {};
-
-      if (Array.isArray(error.errors)) {
-        error.errors.forEach((item) => {
-          if (item.field) {
-            serverErrors[item.field] = item.message;
-          }
-        });
-      }
-
-      if (Object.keys(serverErrors).length > 0) {
-        setErrors(serverErrors);
-      }
+      setErrors(mapServerErrors(error));
 
       setApiError(error.message || "Please check your inputs and try again.");
       return;
@@ -85,7 +89,16 @@ const SignupPage = () => {
   };
 
   const handleFileChange = (e) => {
-    setForm((prev) => ({ ...prev, profilePhoto: e.target.files[0] }));
+    const file = e.target.files?.[0] || null;
+
+    if (!file) {
+      setForm((prev) => ({ ...prev, profilePhoto: "" }));
+      return;
+    }
+
+    setForm((prev) => ({ ...prev, profilePhoto: file }));
+    clearFieldError("profilePhoto");
+    setApiError("");
   };
 
   const handleSubmit = async (e) => {
@@ -98,19 +111,7 @@ const SignupPage = () => {
       await authService.register({ ...form, userType: "applicant" });
       setSuccess(true);
     } catch (err) {
-      const serverErrors = {};
-
-      if (Array.isArray(err.errors)) {
-        err.errors.forEach((item) => {
-          if (item.field) {
-            serverErrors[item.field] = item.message;
-          }
-        });
-      }
-
-      if (Object.keys(serverErrors).length > 0) {
-        setErrors(serverErrors);
-      }
+      setErrors(mapServerErrors(err));
 
       setApiError(err.message || "Failed to create account. Please try again.");
     } finally {
@@ -262,11 +263,12 @@ const SignupPage = () => {
                         {form.profilePhoto ? form.profilePhoto.name : "File Upload"}
                       </span>
                     </label>
+                    {errors.profilePhoto && <span className="text-red-500 text-xs mt-1 block">{errors.profilePhoto}</span>}
                     <input
                       id="profile-photo-input"
                       type="file"
                       className="hidden"
-                      accept="image/*"
+                      accept="image/jpeg,image/png"
                       onChange={handleFileChange}
                     />
                   </div>
@@ -302,7 +304,13 @@ const SignupPage = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Citizenship</label>
-                      <input type="text" name="citizenship" value={form.citizenship} onChange={handleChange} placeholder="Enter Citizenship" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]"  />
+                      <select name="citizenship" value={form.citizenship} onChange={handleChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97] bg-white text-gray-700">
+                        <option value="">Select</option>
+                        <option value="Filipino">Filipino</option>
+                        <option value="American">American</option>
+                        <option value="Canadian">Canadian</option>
+                        <option value="Other">Other</option>
+                      </select>
                       {errors.citizenship && <span className="text-red-500 text-xs mt-1 block">{errors.citizenship}</span>}
                     </div>
                     <div>
@@ -362,6 +370,7 @@ const SignupPage = () => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Facebook</label>
                       <input name="facebook" value={form.facebook} onChange={handleChange} placeholder="Enter Facebook link" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]" />
+                      {errors.facebook && <span className="text-red-500 text-xs mt-1 block">{errors.facebook}</span>}
                     </div>
                   </div>
 

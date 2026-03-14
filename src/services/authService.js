@@ -1,10 +1,27 @@
 import api from "./api";
 
+const serializeProfilePhoto = (profilePhoto) => {
+  if (!(profilePhoto instanceof File)) {
+    return profilePhoto || null;
+  }
+
+  return {
+    name: profilePhoto.name,
+    size: profilePhoto.size,
+    type: profilePhoto.type,
+  };
+};
+
 export const validateSignupStep = async (step, formData) => {
   try {
+    const payload = {
+      ...formData,
+      profilePhoto: serializeProfilePhoto(formData.profilePhoto),
+    };
+
     const response = await api.post("/auth/signup/validate-step", {
       step,
-      formData,
+      formData: payload,
     });
 
     return response.data;

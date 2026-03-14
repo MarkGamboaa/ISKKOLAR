@@ -1,6 +1,8 @@
 import multer from 'multer';
-
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+import {
+  PROFILE_PHOTO_ALLOWED_MIME_TYPES,
+  PROFILE_PHOTO_MAX_FILE_SIZE
+} from '../validation/authValidation.js';
 
 const storage = multer.memoryStorage();
 
@@ -9,12 +11,15 @@ const fileFilter = (req, file, cb) => {
     cb(new Error('Only image uploads are allowed'));
     return;
   }
-
+  if (!PROFILE_PHOTO_ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+    cb(new Error('Only JPEG and PNG images are allowed'));
+    return;
+  }
   cb(null, true);
 };
 
 export const uploadProfilePhoto = multer({
   storage,
-  limits: { fileSize: MAX_FILE_SIZE },
+  limits: { fileSize: PROFILE_PHOTO_MAX_FILE_SIZE },
   fileFilter
 });

@@ -2,7 +2,9 @@ import Joi from 'joi';
 
 const EMAIL_MESSAGE = 'Please provide a valid email address';
 const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
-const MOBILE_PATTERN = /^\d{7,15}$/;
+const MOBILE_PATTERN = /^\d{11}$/;
+export const PROFILE_PHOTO_MAX_FILE_SIZE = 5 * 1024 * 1024;
+export const PROFILE_PHOTO_ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png'];
 
 const requiredText = (label) =>
   Joi.string().required().messages({
@@ -15,30 +17,26 @@ const optionalText = () => Joi.string().allow('', null);
 const emailField = () =>
   Joi.string().email().required().messages({
     'string.email': EMAIL_MESSAGE,
-    'string.empty': 'Email is required',
-    'any.required': 'Email is required'
+    'string.empty': 'Email is required'
   });
 
 const passwordField = (minMessage) =>
   Joi.string().min(8).required().pattern(PASSWORD_PATTERN).messages({
     'string.empty': 'Password is required',
     'string.min': minMessage,
-    'string.pattern.base': 'Password must contain at least one uppercase letter, one lowercase letter, and one number',
-    'any.required': 'Password is required'
+    'string.pattern.base': 'Password must contain at least one uppercase letter, one lowercase letter, and one number'
   });
 
 const stepPasswordField = () =>
   Joi.string().min(8).pattern(PASSWORD_PATTERN).required().messages({
     'string.empty': 'Password is required',
     'string.min': 'Password must be at least 8 characters',
-    'string.pattern.base': 'Password must contain uppercase, lowercase, and number',
-    'any.required': 'Password is required'
+    'string.pattern.base': 'Password must contain uppercase, lowercase, and number'
   });
 
 const confirmPasswordField = (label = 'Confirm password') =>
   Joi.string().empty('').valid(Joi.ref('password')).required().messages({
     'any.only': 'Passwords do not match',
-    'string.empty': `${label} is required`,
     'any.required': `${label} is required`
   });
 
@@ -51,9 +49,61 @@ const enumField = (values, label, invalidMessage) =>
 const mobileField = (patternMessage) =>
   Joi.string().pattern(MOBILE_PATTERN).required().messages({
     'string.pattern.base': patternMessage,
-    'string.empty': 'Mobile number is required',
-    'any.required': 'Mobile number is required'
+    'string.empty': 'Mobile number is required'
   });
+
+const profilePhotoMessage = (message) => ({ field: 'profilePhoto', message });
+
+const normalizeFileSize = (value) => {
+  const parsedValue = Number(value);
+  return Number.isFinite(parsedValue) ? parsedValue : null;
+};
+
+export const validateProfilePhotoMetadata = (profilePhoto) => {
+  if (!profilePhoto) {
+    return 'Upload profile photo is required';
+  }
+
+  if (typeof profilePhoto !== 'object') {
+    return 'Upload profile photo is required';
+  }
+
+  if (!profilePhoto.name) {
+    return 'Upload profile photo is required';
+  }
+
+  if (!PROFILE_PHOTO_ALLOWED_MIME_TYPES.includes(profilePhoto.type)) {
+    return 'Only JPEG and PNG images are allowed';
+  }
+
+  const fileSize = normalizeFileSize(profilePhoto.size);
+  if (fileSize === null) {
+    return 'Unable to validate profile photo';
+  }
+
+  if (fileSize > PROFILE_PHOTO_MAX_FILE_SIZE) {
+    return 'File size exceeds the maximum limit of 5MB';
+  }
+
+  return null;
+};
+
+export const validateProfilePhotoFile = (profilePhoto) => {
+  if (!profilePhoto) {
+    return 'Upload profile photo is required';
+  }
+
+  if (!PROFILE_PHOTO_ALLOWED_MIME_TYPES.includes(profilePhoto.mimetype)) {
+    return 'Only JPEG and PNG images are allowed';
+  }
+
+  const fileSize = normalizeFileSize(profilePhoto.size);
+  if (fileSize !== null && fileSize > PROFILE_PHOTO_MAX_FILE_SIZE) {
+    return 'File size exceeds the maximum limit of 5MB';
+  }
+
+  return null;
+};
 
 export const signUpValidation = Joi.object({
   email: emailField(),
@@ -67,8 +117,8 @@ export const signUpValidation = Joi.object({
   gender: enumField(['Male', 'Female'], 'Gender', 'Gender must be Male or Female'),
   civilStatus: enumField(['Single', 'Married'], 'Civil status', 'Civil status must be Single or Married'),
   citizenship: requiredText('Citizenship'),
-  mobileNumber: mobileField('Mobile number must contain 7 to 15 digits'),
-  facebook: optionalText(),
+  mobileNumber: mobileField('Mobile number must start with 0 and contain 11 digits'),
+  facebook: requiredText('Facebook account'),
   street: requiredText('Street/Unit'),
   barangay: requiredText('Barangay'),
   city: requiredText('City'),
@@ -80,6 +130,7 @@ export const signUpValidation = Joi.object({
     'User type',
     'User type must be one of: scholar, staff, admin, applicant'
   )
+  
 });
 
 export const loginValidation = Joi.object({
@@ -114,13 +165,13 @@ const signUpStepTwoValidation = Joi.object({
   suffix: optionalText(),
   birthday: requiredText('Birthday'),
   gender: enumField(['Male', 'Female'], 'Gender', 'Gender must be either Male or Female'),
-  civilStatus: enumField(['Single', 'Married'], 'Civil status', 'Civil status must be either Single or Married'),
+  civilStatus: enumField(['Single', 'Married', ], 'Civil status', 'Civil status must be either Single or Married'),
   citizenship: requiredText('Citizenship')
 });
 
 const signUpStepThreeValidation = Joi.object({
-  mobileNumber: mobileField('Please provide a valid mobile number'),
-  facebook: optionalText(),
+  mobileNumber: mobileField('Mobile number must start with 0 and contain 11 digits'),
+  facebook: requiredText('Facebook account'),
   street: requiredText('Street'),
   barangay: requiredText('Barangay'),
   city: requiredText('City'),
@@ -150,15 +201,26 @@ export const validateSignupStepPayload = (step, payload) => {
     stripUnknown: false
   });
 
-  if (!error) {
+  const errors = error
+    ? error.details.map((detail) => ({
+        field: detail.path.join('.'),
+        message: detail.message
+      }))
+    : [];
+
+  if (step === 2) {
+    const profilePhotoError = validateProfilePhotoMetadata(payload.profilePhoto);
+    if (profilePhotoError) {
+      errors.push(profilePhotoMessage(profilePhotoError));
+    }
+  }
+
+  if (errors.length === 0) {
     return { success: true, errors: [] };
   }
 
   return {
     success: false,
-    errors: error.details.map((detail) => ({
-      field: detail.path.join('.'),
-      message: detail.message
-    }))
+    errors
   };
 };

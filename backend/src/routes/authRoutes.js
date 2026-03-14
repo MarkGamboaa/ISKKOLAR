@@ -14,7 +14,7 @@ import {
   signUpValidation,
   loginValidation,
   forgotPasswordValidation
-} from '../validation/schemas.js';
+} from '../validation/authValidation.js';
 
 const router = express.Router();
 

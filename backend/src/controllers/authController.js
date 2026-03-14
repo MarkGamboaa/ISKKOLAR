@@ -1,6 +1,9 @@
 import { supabaseClient, supabaseAdmin } from '../config/supabase.js';
 import { hashPassword, generateToken } from '../utils/auth.js';
-import { validateSignupStepPayload } from '../validation/schemas.js';
+import {
+  validateProfilePhotoFile,
+  validateSignupStepPayload
+} from '../validation/authValidation.js';
 
 const PROFILE_BUCKET = process.env.SUPABASE_PROFILE_BUCKET || 'profile-photos';
 const USER_SELECT_FIELDS = 'id, email, first_name, last_name, role, profile_picture_url, is_active';
@@ -197,6 +200,16 @@ export const signUp = async (req, res) => {
     } = req.body;
 
     const profilePhoto = req.file || null;
+    const profilePhotoError = validateProfilePhotoFile(profilePhoto);
+
+    if (profilePhotoError) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors: [{ field: 'profilePhoto', message: profilePhotoError }]
+      });
+    }
+
     const requestedRole = userType || 'applicant';
 
     const { user: existingUser, error: existingUserError } = await findUserByEmail(email);
@@ -277,7 +290,6 @@ export const signUp = async (req, res) => {
     if (dbError) {
       await removeUploadedPhotoSafely(uploadedPhotoPath);
 
-      // Rollback: Delete auth user if profile creation fails
       await deleteAuthUserSafely(authData.user.id);
       return res.status(400).json({
         success: false,
