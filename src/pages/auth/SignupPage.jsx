@@ -8,6 +8,7 @@ const SignupPage = () => {
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
   const [success, setSuccess] = useState(false);
+  
 
   const [form, setForm] = useState({
     firstName: "",
@@ -33,6 +34,8 @@ const SignupPage = () => {
   });
 
   const [errors, setErrors] = useState({});
+  const [isOtherCitizenship, setIsOtherCitizenship] = useState(false);
+  
 
   const scrollTop = () => window.scrollTo(0, 0);
 
@@ -295,6 +298,7 @@ const SignupPage = () => {
                         <option value="Jr.">Jr.</option>
                         <option value="Sr.">Sr.</option>
                         <option value="III">III</option>
+                        <option value="IV">IV</option>
                       </select>
                     </div>
                     <div>
@@ -304,14 +308,32 @@ const SignupPage = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Citizenship</label>
-                      <select name="citizenship" value={form.citizenship} onChange={handleChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97] bg-white text-gray-700">
-                        <option value="">Select</option>
-                        <option value="Filipino">Filipino</option>
-                        <option value="American">American</option>
-                        <option value="Canadian">Canadian</option>
-                        <option value="Other">Other</option>
+                      <select name="citizenship" value={isOtherCitizenship ? "Other" : form.citizenship} onChange={(e) => {const val = e.target.value;
+                        if (val === "Other") {setIsOtherCitizenship(true);
+                      // Clear the actual value so they start fresh in the input
+                          handleChange({ target: { name: 'citizenship', value: '' } });
+                        } else {
+                          setIsOtherCitizenship(false);
+                          handleChange(e);
+                        }
+                        }} 
+                        className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97] bg-white text-gray-700">
+                      <option value="">Select</option>
+                      <option value="Filipino">Filipino</option>
+                      <option value="Other">Other</option>
                       </select>
-                      {errors.citizenship && <span className="text-red-500 text-xs mt-1 block">{errors.citizenship}</span>}
+
+                      {/* Show the text input ONLY if 'Other' was selected */}
+                      {isOtherCitizenship && (
+                      <div className="mt-2">
+                      <input type="text" name="citizenship" placeholder="Please specify citizenship" value={form.citizenship} onChange={handleChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97] bg-white text-gray-700" autoFocus />
+                      <button type="button" onClick={() => { setIsOtherCitizenship(false); handleChange({ target: { name: 'citizenship', value: 'Filipino' } }); }} className="text-[10px] text-gray-400 underline mt-1">
+                      Back to preset options
+                      </button>
+                    </div>
+                      )}
+
+                    {errors.citizenship && <span className="text-red-500 text-xs mt-1 block">{errors.citizenship}</span>}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
@@ -369,7 +391,7 @@ const SignupPage = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Facebook</label>
-                      <input name="facebook" value={form.facebook} onChange={handleChange} placeholder="Enter Facebook link" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]" />
+                      <input type="text" name="facebook" value={form.facebook} onChange={handleChange} placeholder="Enter Facebook link"  className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]" />
                       {errors.facebook && <span className="text-red-500 text-xs mt-1 block">{errors.facebook}</span>}
                     </div>
                   </div>
