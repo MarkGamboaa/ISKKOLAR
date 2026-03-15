@@ -3,103 +3,63 @@ import { useAuth } from "../../context/AuthContext";
 import kkfiLogo from "../../assets/KKFI LOGO.png";
 import * as profileService from "../../services/profileService";
 
-const ScholarHomeTab = ({ user }) => (
-  <>
-    <div className="hero-banner">
-      <div className="hero-content">
-        <div className="hero-greeting">
-          <span className="greeting-label">Good day,</span>
-          <h1>{user?.firstName} {user?.lastName}</h1>
-          <span className="status-badge active">Active Scholar</span>
-        </div>
-      </div>
-      <div className="hero-illustration">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M11.7 2.805a.75.75 0 01.6 0A60.65 60.65 0 0122.83 8.72a.75.75 0 01-.231 1.337 49.949 49.949 0 00-9.902 3.912l-.003.002-.34.18a.75.75 0 01-.707 0A50.009 50.009 0 007.5 12.174v-.224c0-.131.067-.248.172-.311a54.614 54.614 0 014.653-2.52.75.75 0 00-.65-1.352 56.129 56.129 0 00-4.78 2.589 1.858 1.858 0 00-.859 1.228 49.803 49.803 0 00-4.634-1.527.75.75 0 01-.231-1.337A60.653 60.653 0 0111.7 2.805z"/>
-          <path d="M13.06 15.473a48.45 48.45 0 017.666-3.282c.134 1.414.22 2.843.255 4.285a.75.75 0 01-.46.71 47.878 47.878 0 00-8.105 4.342.75.75 0 01-.832 0 47.877 47.877 0 00-8.104-4.342.75.75 0 01-.461-.71c.035-1.442.121-2.87.255-4.286A48.4 48.4 0 016 13.18v1.27a1.5 1.5 0 00-.14 2.508c-.09.38-.222.753-.397 1.11.452.213.901.434 1.346.661a6.729 6.729 0 00.551-1.608 1.5 1.5 0 00.14-2.67v-.645a48.549 48.549 0 013.44 1.668 2.25 2.25 0 002.12 0z"/>
-          <path d="M4.462 19.462c.42-.419.753-.89 1-1.394.453.213.902.434 1.347.661a6.743 6.743 0 01-1.286 1.794.75.75 0 11-1.06-1.06z"/>
-        </svg>
-      </div>
-    </div>
+const ApplicantHomeTab = () => {
+  const programs = [
+    {
+      title: "TERTIARY SCHOLARSHIP PROGRAM",
+      support: "Up to P30,000/year",
+      tag: "Full Academic Year",
+      requirement: "GWA: 85% and above",
+      desc: "Support for Filipino state university students to empower future leaders across the regions.",
+      image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&q=80&w=600&h=300",
+      gradient: "linear-gradient(135deg, #4f6d7a, #25364f)",
+    },
+    {
+      title: "KKFI EMPLOYEE-CHILD EDUCATION GRANT",
+      support: "Up to P30,000/year",
+      tag: "Tuition Support",
+      requirement: "Staff and Family",
+      desc: "Educational support for regular KKFI employees, a slot for personal professional growth or a relative's studies.",
+      image: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=600&h=300",
+      gradient: "linear-gradient(135deg, #3f5871, #324158)",
+    },
+    {
+      title: "VOCATIONAL AND TECHNOLOGY SCHOLARSHIP",
+      support: "Up to P65,000",
+      tag: "Skill Development",
+      requirement: "Certification",
+      desc: "Practical skills-based scholarship for Filipinos, to fast-track employment and sustainable livelihoods.",
+      image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=600&h=300",
+      gradient: "linear-gradient(135deg, #5f738d, #2e3f57)",
+    },
+  ];
 
-    <div className="stats-row">
-      <div className="stat-card">
-        <div className="stat-icon purple">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-        </div>
-        <div className="stat-info"><h3>3rd Year</h3><p>BS Computer Science</p></div>
+  return (
+    <section>
+      <div style={{ textAlign: "center", marginBottom: 24 }}>
+        <h1 style={{ fontSize: 42, fontWeight: 800, margin: "8px 0 0", letterSpacing: 0.8, color: "#4f568e" }}>SCHOLARSHIPS PROGRAMS</h1>
       </div>
-      <div className="stat-card">
-        <div className="stat-icon green">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        </div>
-        <div className="stat-info"><h3>1.75</h3><p>Current GWA</p></div>
-      </div>
-      <div className="stat-card">
-        <div className="stat-icon blue">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-        </div>
-        <div className="stat-info"><h3>5</h3><p>Activities Done</p></div>
-      </div>
-      <div className="stat-card">
-        <div className="stat-icon purple">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-        </div>
-        <div className="stat-info"><h3>2nd</h3><p>Current Term</p></div>
-      </div>
-    </div>
 
-    <div className="section-header"><h2 className="section-title">Quick Links</h2></div>
-    <div className="quick-links-grid">
-      <div className="quick-link-card">
-        <div className="quick-link-icon green">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-        </div>
-        <span>Grade Compliance</span>
+      <div style={{ display: "grid", gap: 18, gridTemplateColumns: "repeat(auto-fit, minmax(270px, 1fr))" }}>
+        {programs.map((program) => (
+          <article key={program.title} style={{ background: "#fff", borderRadius: 16, overflow: "hidden", boxShadow: "0 10px 22px rgba(27, 36, 63, 0.1)", border: "1px solid #eceff6" }}>
+            <div style={{ backgroundImage: `linear-gradient(rgba(37, 54, 79, 0.0), rgba(37, 54, 79, 0.9)), url('${program.image}')`, backgroundSize: 'cover', backgroundPosition: 'center', minHeight: 180, padding: 24, display: "flex", alignItems: "flex-end" }}>
+              <h3 style={{ color: "#fff", margin: 0, fontWeight: 800, fontSize: 24, lineHeight: 1.2 }}>{program.title}</h3>
+            </div>
+            <div style={{ padding: "20px 24px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
+                <p style={{ fontWeight: 800, fontSize: 17, margin: 0, color: "#253056" }}>{program.support}</p>
+                <span style={{ fontSize: 13, color: "#8a8f9e" }}>{program.tag}</span>
+              </div>
+              <p style={{ margin: "10px 0 14px", fontSize: 14, color: "#70778a" }}>{program.requirement}</p>
+              <p style={{ margin: 0, fontSize: 14, color: "#70778a", lineHeight: 1.6 }}>{program.desc}</p>
+            </div>
+          </article>
+        ))}
       </div>
-      <div className="quick-link-card">
-        <div className="quick-link-icon orange">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>
-        </div>
-        <span>Financial Records</span>
-      </div>
-      <div className="quick-link-card">
-        <div className="quick-link-icon purple">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-        </div>
-        <span>My Profile</span>
-      </div>
-      <div className="quick-link-card">
-        <div className="quick-link-icon blue">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-        </div>
-        <span>Activities</span>
-      </div>
-    </div>
-
-    <div className="section-header"><h2 className="section-title">Scholar Services</h2><span className="section-link" style={{ cursor: 'pointer' }}>View All</span></div>
-    <div className="services-grid">
-      <div className="service-card">
-        <div className="service-icon purple">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-        </div>
-        <div className="service-info"><h3>Scholarship Renewal</h3><p>Renew for AY 2026-2027</p></div>
-        <div className="service-arrow">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
-        </div>
-      </div>
-      <div className="service-card">
-        <div className="service-icon blue">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
-        </div>
-        <div className="service-info"><h3>Board Exam Assistance</h3><p>Up to ₱12,000 support</p></div>
-        <div className="service-arrow">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/></svg>
-        </div>
-      </div>
-    </div>
-  </>
-);
+    </section>
+  );
+};
 
 const ProfileTab = ({ user, logout }) => {
   const [profile, setProfile] = useState(null);
@@ -120,7 +80,7 @@ const ProfileTab = ({ user, logout }) => {
       const p = await profileService.getProfile();
       setProfile(p);
       setForm({ firstName: p?.firstName || "", lastName: p?.lastName || "" });
-    } catch (err) { 
+    } catch (err) {
       console.error(err);
       if (user) {
         setProfile(user);
@@ -177,7 +137,7 @@ const ProfileTab = ({ user, logout }) => {
           <div>
             <h2 style={ps.profileName}>{currentProfile.firstName} {currentProfile.lastName}</h2>
             <p style={ps.profileEmail}>{currentProfile.email}</p>
-            <span style={ps.roleBadge}>{currentProfile.role || currentProfile.userType || "Scholar"}</span>
+            <span style={ps.roleBadge}>{currentProfile.role || currentProfile.userType || "Applicant"}</span>
           </div>
         </div>
       </div>
@@ -207,9 +167,7 @@ const ProfileTab = ({ user, logout }) => {
             <div style={ps.infoRow}><span style={ps.infoLabel}>First Name</span><span style={ps.infoValue}>{currentProfile.firstName}</span></div>
             <div style={ps.infoRow}><span style={ps.infoLabel}>Last Name</span><span style={ps.infoValue}>{currentProfile.lastName}</span></div>
             <div style={ps.infoRow}><span style={ps.infoLabel}>Email</span><span style={ps.infoValue}>{currentProfile.email}</span></div>
-            <div style={ps.infoRow}><span style={ps.infoLabel}>Role</span><span style={{ ...ps.infoValue, textTransform: 'capitalize' }}>{currentProfile.role || currentProfile.userType || "Scholar"}</span></div>
-            <div style={ps.infoRow}><span style={ps.infoLabel}>Scholarship Type</span><span style={ps.infoValue}>{currentProfile.scholarshipType || "N/A"}</span></div>
-            <div style={ps.infoRow}><span style={ps.infoLabel}>Status</span><span style={{ ...ps.infoValue, textTransform: 'capitalize', color: currentProfile.status === 'active' ? '#16a34a' : '#888' }}>{currentProfile.status || "active"}</span></div>
+            <div style={ps.infoRow}><span style={ps.infoLabel}>Role</span><span style={{ ...ps.infoValue, textTransform: 'capitalize' }}>{currentProfile.role || currentProfile.userType || "Applicant"}</span></div>
           </div>
         )}
       </div>
@@ -281,7 +239,7 @@ const ps = {
   errorBanner: { padding: '12px 16px', background: '#fee2e2', color: '#dc2626', borderRadius: 10, fontSize: 14, fontWeight: 500 },
 };
 
-const ScholarDashboard = () => {
+const ApplicantDashboard = () => {
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("home");
   const initials = user
@@ -290,9 +248,9 @@ const ScholarDashboard = () => {
 
   const navItems = [
     { key: "home", label: "Home", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
-    { key: "activities", label: "Activities", icon: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" },
     { key: "application", label: "Application", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
-    { key: "profile", label: "Profile", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
+    { key: "notification", label: "Notification", icon: "M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" },
+    { key: "profile", label: "Account", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
   ];
 
   return (
@@ -306,17 +264,17 @@ const ScholarDashboard = () => {
           <span style={styles.brandText}>ISKKOLAR</span>
         </div>
         <div style={styles.topbarRight}>
-          <button style={styles.notificationBtn}>
+          <button onClick={() => setActiveTab("notification")} style={styles.notificationBtn}>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ width: 22, height: 22 }}>
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
             <span style={styles.notificationBadge}></span>
           </button>
-          <div style={styles.userMenu}>
+          <div style={styles.userMenu} onClick={() => setActiveTab("profile")}>
             <div style={styles.userAvatar}>{initials}</div>
             <div style={styles.userInfo}>
               <span style={styles.userName}>{user?.firstName} {user?.lastName}</span>
-              <span style={styles.userRole}>Active Scholar</span>
+              <span style={styles.userRole}>Applicant</span>
             </div>
           </div>
         </div>
@@ -324,9 +282,9 @@ const ScholarDashboard = () => {
 
       {/* Main Content */}
       <main style={styles.mainContent}>
-        {activeTab === "home" && <ScholarHomeTab user={user} />}
+        {activeTab === "home" && <ApplicantHomeTab />}
         {activeTab === "profile" && <ProfileTab user={user} logout={logout} />}
-        {(activeTab === "activities" || activeTab === "application") && (
+        {(activeTab === "application" || activeTab === "notification") && (
           <div style={{ textAlign: 'center', paddingTop: 60 }}>
             <div style={{ fontSize: 56 }}>🚧</div>
             <h2 style={{ fontSize: 22, fontWeight: 700, color: '#1a1a2e', marginTop: 12, textTransform: 'capitalize' }}>{activeTab}</h2>
@@ -364,9 +322,9 @@ const styles = {
   brandText: { fontWeight: 700, fontSize: 16, color: '#5b5f97', letterSpacing: 0.5 },
   topbarRight: { display: 'flex', alignItems: 'center', gap: 15 },
   notificationBtn: { width: 40, height: 40, borderRadius: '50%', border: 'none', background: '#f8f9fc', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666', position: 'relative' },
-  notificationBadge: { position: 'absolute', top: 6, right: 6, width: 8, height: 8, background: '#e8315b', borderRadius: '50%' },
-  userMenu: { display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '6px 12px 6px 6px', borderRadius: 25 },
-  userAvatar: { width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, #5b5f97 0%, #8b5cf6 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 600, fontSize: 14 },
+  notificationBadge: { position: 'absolute', top: 6, right: 8, width: 8, height: 8, background: '#e8315b', borderRadius: '50%' },
+  userMenu: { display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '6px 12px 6px 6px', borderRadius: 25, transition: 'background 0.2s' },
+  userAvatar: { width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, #5b5f97 0%, #8b5cf6 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 600, fontSize: 13 },
   userInfo: { display: 'flex', flexDirection: 'column' },
   userName: { fontSize: 13, fontWeight: 600, color: '#333' },
   userRole: { fontSize: 11, color: '#888' },
@@ -379,4 +337,4 @@ const styles = {
   navLabel: { fontWeight: 600, fontSize: 11 },
 };
 
-export default ScholarDashboard;
+export default ApplicantDashboard;

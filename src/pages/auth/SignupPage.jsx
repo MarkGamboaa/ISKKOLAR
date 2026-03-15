@@ -1,14 +1,33 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import * as authService from "../../services/authService";
 
 const SignupPage = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
   const [success, setSuccess] = useState(false);
-  
+
+  const [provincesList, setProvincesList] = useState([]);
+  const [citiesList, setCitiesList] = useState([]);
+  const [barangaysList, setBarangaysList] = useState([]);
+
+  useEffect(() => {
+    // Fetch provinces and Metro Manila (NCR) manually to allow Province dropdown Selection
+    fetch("https://psgc.gitlab.io/api/provinces/")
+      .then(res => res.json())
+      .then(data => {
+        // Sort provinces
+        let provs = data.sort((a,b) => a.name.localeCompare(b.name));
+        // Push NCR as it's not considered a province in PSGC but users expect it in "Province" dropdown
+        provs.unshift({ code: "130000000", name: "Metro Manila (NCR)" });
+        setProvincesList(provs);
+      })
+      .catch(console.error);
+  }, []);
 
   const [form, setForm] = useState({
     firstName: "",
@@ -36,6 +55,52 @@ const SignupPage = () => {
   const [errors, setErrors] = useState({});
   const [isOtherCitizenship, setIsOtherCitizenship] = useState(false);
   
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Address Handlers
+  const handleProvinceChange = (e) => {
+    const provName = e.target.value;
+    const selectedProv = provincesList.find(p => p.name === provName);
+    setForm(prev => ({ ...prev, province: provName, city: "", barangay: "" }));
+    clearFieldError("province");
+    setCitiesList([]);
+    setBarangaysList([]);
+
+    if (selectedProv) {
+      if (selectedProv.code === "130000000") {
+        fetch(`https://psgc.gitlab.io/api/regions/130000000/cities-municipalities/`)
+          .then(res => res.json())
+          .then(data => setCitiesList(data.sort((a,b) => a.name.localeCompare(b.name))))
+          .catch(console.error);
+      } else {
+        fetch(`https://psgc.gitlab.io/api/provinces/${selectedProv.code}/cities-municipalities/`)
+          .then(res => res.json())
+          .then(data => setCitiesList(data.sort((a,b) => a.name.localeCompare(b.name))))
+          .catch(console.error);
+      }
+    }
+  };
+
+  const handleCityChange = (e) => {
+    const cityName = e.target.value;
+    const selectedCity = citiesList.find(c => c.name === cityName);
+    setForm(prev => ({ ...prev, city: cityName, barangay: "" }));
+    clearFieldError("city");
+    setBarangaysList([]);
+
+    if (selectedCity) {
+      fetch(`https://psgc.gitlab.io/api/cities-municipalities/${selectedCity.code}/barangays/`)
+        .then(res => res.json())
+        .then(data => setBarangaysList(data.sort((a,b) => a.name.localeCompare(b.name))))
+        .catch(console.error);
+    }
+  };
+
+  const handleBarangayChange = (e) => {
+    setForm(prev => ({ ...prev, barangay: e.target.value }));
+    clearFieldError("barangay");
+  };
 
   const scrollTop = () => window.scrollTo(0, 0);
 
@@ -50,17 +115,10 @@ const SignupPage = () => {
 
   const mapServerErrors = (error) => {
     const serverErrors = {};
-
-    if (!Array.isArray(error?.errors)) {
-      return serverErrors;
-    }
-
+    if (!Array.isArray(error?.errors)) return serverErrors;
     error.errors.forEach((item) => {
-      if (item.field) {
-        serverErrors[item.field] = item.message;
-      }
+      if (item.field) serverErrors[item.field] = item.message;
     });
-
     return serverErrors;
   };
 
@@ -69,7 +127,6 @@ const SignupPage = () => {
       await authService.validateSignupStep(step, form);
     } catch (error) {
       setErrors(mapServerErrors(error));
-
       setApiError(error.message || "Please check your inputs and try again.");
       return;
     }
@@ -93,12 +150,10 @@ const SignupPage = () => {
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0] || null;
-
     if (!file) {
       setForm((prev) => ({ ...prev, profilePhoto: "" }));
       return;
     }
-
     setForm((prev) => ({ ...prev, profilePhoto: file }));
     clearFieldError("profilePhoto");
     setApiError("");
@@ -106,18 +161,15 @@ const SignupPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     setLoading(true);
     setApiError("");
     setErrors({});
     try {
       await authService.register({ ...form, userType: "applicant" });
-      setSuccess(true);
+      await login(form.email, form.password);
     } catch (err) {
       setErrors(mapServerErrors(err));
-
       setApiError(err.message || "Failed to create account. Please try again.");
-    } finally {
       setLoading(false);
     }
   };
@@ -144,7 +196,6 @@ const SignupPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 flex justify-center">
       <div className="max-w-3xl w-full">
-        {/* Header Box */}
         <div className="bg-[#5b5f97] rounded-t-xl p-8 text-white relative">
           <button onClick={() => step > 1 ? handleBack() : navigate("/")} className="absolute top-8 left-8 p-1.5 bg-white/20 rounded-md hover:bg-white/30 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -157,10 +208,7 @@ const SignupPage = () => {
           </div>
         </div>
 
-        {/* Form Container */}
         <div className="bg-white rounded-b-xl shadow-sm border border-gray-100 p-8">
-          
-          {/* Progress Indicators */}
           <div className="flex gap-2 mb-8">
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className={`h-1.5 flex-1 rounded-full ${step >= i ? 'bg-[#5b5f97]' : 'bg-gray-200'}`} />
@@ -177,8 +225,6 @@ const SignupPage = () => {
                   }
             }
           >
-            
-            {/* Step 1: Account Setup */}
             {step === 1 && (
               <div className="animate-fade-in">
                 <div className="flex items-center gap-2 mb-6 border-l-4 border-[#5b5f97] pl-3 py-1">
@@ -212,11 +258,18 @@ const SignupPage = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                           </svg>
                         </div>
-                        <input type="password" name="password" value={form.password} onChange={handleChange} placeholder="********" className="w-full border border-gray-200 rounded-lg pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]"  />
-                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer">
-                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-400 hover:text-gray-600">
-                             <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-                           </svg>
+                        <input type={showPassword ? "text" : "password"} name="password" value={form.password} onChange={handleChange} placeholder="********" className="w-full border border-gray-200 rounded-lg pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]"  />
+                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer" onClick={() => setShowPassword(!showPassword)}>
+                           {showPassword ? (
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-400 hover:text-gray-600">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                            </svg>
+                           ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-400 hover:text-gray-600">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                           )}
                         </div>
                       </div>
                       {errors.password && <span className="text-red-500 text-xs mt-1 block">{errors.password}</span>}
@@ -230,11 +283,18 @@ const SignupPage = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                           </svg>
                         </div>
-                        <input type="password" name="confirmPassword" value={form.confirmPassword} onChange={handleChange} placeholder="********" className="w-full border border-gray-200 rounded-lg pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]" />
-                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer">
-                           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-400 hover:text-gray-600">
-                             <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-                           </svg>
+                        <input type={showConfirmPassword ? "text" : "password"} name="confirmPassword" value={form.confirmPassword} onChange={handleChange} placeholder="********" className="w-full border border-gray-200 rounded-lg pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]" />
+                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                           {showConfirmPassword ? (
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-400 hover:text-gray-600">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                            </svg>
+                           ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-400 hover:text-gray-600">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                           )}
                         </div>
                       </div>
                       {errors.confirmPassword && <span className="text-red-500 text-xs mt-1 block">{errors.confirmPassword}</span>}
@@ -248,7 +308,6 @@ const SignupPage = () => {
               </div>
             )}
 
-            {/* Step 2: Personal Details */}
             {step === 2 && (
               <div className="animate-fade-in">
                 <div className="flex items-center gap-2 mb-6 border-l-4 border-[#5b5f97] pl-3 py-1">
@@ -310,7 +369,6 @@ const SignupPage = () => {
                       <label className="block text-sm font-medium text-gray-700 mb-1">Citizenship</label>
                       <select name="citizenship" value={isOtherCitizenship ? "Other" : form.citizenship} onChange={(e) => {const val = e.target.value;
                         if (val === "Other") {setIsOtherCitizenship(true);
-                      // Clear the actual value so they start fresh in the input
                           handleChange({ target: { name: 'citizenship', value: '' } });
                         } else {
                           setIsOtherCitizenship(false);
@@ -322,18 +380,15 @@ const SignupPage = () => {
                       <option value="Filipino">Filipino</option>
                       <option value="Other">Other</option>
                       </select>
-
-                      {/* Show the text input ONLY if 'Other' was selected */}
                       {isOtherCitizenship && (
                       <div className="mt-2">
-                      <input type="text" name="citizenship" placeholder="Please specify citizenship" value={form.citizenship} onChange={handleChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97] bg-white text-gray-700" autoFocus />
-                      <button type="button" onClick={() => { setIsOtherCitizenship(false); handleChange({ target: { name: 'citizenship', value: 'Filipino' } }); }} className="text-[10px] text-gray-400 underline mt-1">
-                      Back to preset options
-                      </button>
-                    </div>
+                        <input type="text" name="citizenship" placeholder="Please specify citizenship" value={form.citizenship} onChange={handleChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97] bg-white text-gray-700" autoFocus />
+                        <button type="button" onClick={() => { setIsOtherCitizenship(false); handleChange({ target: { name: 'citizenship', value: 'Filipino' } }); }} className="text-[10px] text-gray-400 underline mt-1">
+                          Back to preset options
+                        </button>
+                      </div>
                       )}
-
-                    {errors.citizenship && <span className="text-red-500 text-xs mt-1 block">{errors.citizenship}</span>}
+                      {errors.citizenship && <span className="text-red-500 text-xs mt-1 block">{errors.citizenship}</span>}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
@@ -362,7 +417,6 @@ const SignupPage = () => {
               </div>
             )}
 
-            {/* Step 3: Contact Details */}
             {step === 3 && (
               <div className="animate-fade-in">
                 <div className="flex items-center gap-2 mb-6 border-l-4 border-[#5b5f97] pl-3 py-1">
@@ -381,10 +435,13 @@ const SignupPage = () => {
                         name="mobileNumber" 
                         value={form.mobileNumber} 
                         onChange={(e) => {
-                          const val = e.target.value.replace(/[^0-9]/g, '');
-                          handleChange({ target: { name: 'mobileNumber', value: val } });
+                          let val = e.target.value.replace(/[^0-9]/g, '');
+                          if (val.length > 0 && val[0] !== '0') {
+                            val = '0' + val.substring(1);
+                          }
+                          handleChange({ target: { name: 'mobileNumber', value: val.substring(0, 11) } });
                         }} 
-                        placeholder="Enter Mobile Number" 
+                        placeholder="09123456789" 
                         className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]" 
                       />
                       {errors.mobileNumber && <span className="text-red-500 text-xs mt-1 block">{errors.mobileNumber}</span>}
@@ -406,21 +463,32 @@ const SignupPage = () => {
                       <input type="text" name="street" value={form.street} onChange={handleChange} placeholder="Enter Street/Unit" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]"  />
                       {errors.street && <span className="text-red-500 text-xs mt-1 block">{errors.street}</span>}
                     </div>
+                    
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Barangay</label>
-                      <input type="text" name="barangay" value={form.barangay} onChange={handleChange} placeholder="Enter Barangay" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]" />
-                      {errors.barangay && <span className="text-red-500 text-xs mt-1 block">{errors.barangay}</span>}
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Province</label>
+                      <select name="province" value={form.province} onChange={handleProvinceChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97] bg-white text-gray-700">
+                        <option value="">Select Province</option>
+                        {provincesList.map(p => <option key={p.code} value={p.name}>{p.name}</option>)}
+                      </select>
+                      {errors.province && <span className="text-red-500 text-xs mt-1 block">{errors.province}</span>}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                      <input type="text" name="city" value={form.city} onChange={handleChange} placeholder="Enter City" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]"  />
+                      <label className="block text-sm font-medium text-gray-700 mb-1">City/Municipality</label>
+                      <select name="city" value={form.city} onChange={handleCityChange} disabled={!form.province} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97] bg-white text-gray-700 disabled:bg-gray-100 disabled:text-gray-400">
+                        <option value="">Select City/Municipality</option>
+                        {citiesList.map(c => <option key={c.code} value={c.name}>{c.name}</option>)}
+                      </select>
                       {errors.city && <span className="text-red-500 text-xs mt-1 block">{errors.city}</span>}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Province</label>
-                      <input type="text" name="province" value={form.province} onChange={handleChange} placeholder="Enter Province" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97]" />
-                      {errors.province && <span className="text-red-500 text-xs mt-1 block">{errors.province}</span>}
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Barangay</label>
+                      <select name="barangay" value={form.barangay} onChange={handleBarangayChange} disabled={!form.city} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97] bg-white text-gray-700 disabled:bg-gray-100 disabled:text-gray-400">
+                        <option value="">Select Barangay</option>
+                        {barangaysList.map(b => <option key={b.code} value={b.name}>{b.name}</option>)}
+                      </select>
+                      {errors.barangay && <span className="text-red-500 text-xs mt-1 block">{errors.barangay}</span>}
                     </div>
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
                       <select name="country" value={form.country} onChange={handleChange} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#5b5f97] bg-white text-gray-700">
@@ -442,7 +510,6 @@ const SignupPage = () => {
               </div>
             )}
 
-            {/* Step 4: Review Information */}
             {step === 4 && (
               <div className="animate-fade-in">
                 <div className="flex items-center gap-2 mb-6 border-l-4 border-[#5b5f97] pl-3 py-1">
@@ -468,7 +535,6 @@ const SignupPage = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Left Column - Personal Info */}
                   <div className="bg-gray-50 p-5 rounded-lg border border-gray-100">
                     <h3 className="text-[#5b5f97] font-semibold text-sm mb-4 border-l-2 border-[#5b5f97] pl-2">Personal Information</h3>
                     <div className="space-y-3">
@@ -483,7 +549,6 @@ const SignupPage = () => {
                     </div>
                   </div>
 
-                  {/* Right Column - Contact Info */}
                   <div className="bg-gray-50 p-5 rounded-lg border border-gray-100">
                     <h3 className="text-[#5b5f97] font-semibold text-sm mb-4 border-l-2 border-[#5b5f97] pl-2">Contact Information</h3>
                     <div className="space-y-3">
@@ -509,7 +574,6 @@ const SignupPage = () => {
             )}
           </form>
 
-          {/* Bottom Login Link */}
           {step < 4 && (
             <div className="mt-6 text-center text-sm text-gray-500">
               Already have an account? <Link to="/" className="text-[#5b5f97] font-semibold hover:underline">Login here.</Link>
