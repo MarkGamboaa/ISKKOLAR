@@ -77,7 +77,7 @@ const ScholarHomeTab = ({ user }) => (
       </div>
     </div>
 
-    <div className="section-header"><h2 className="section-title">Scholar Services</h2><span className="section-link" style={{ cursor: 'pointer' }}>View All</span></div>
+    <div className="section-header"><h2 className="section-title">Scholar Services</h2><span className="section-link cursor-pointer hover:underline text-[#5b5f97]">View All</span></div>
     <div className="services-grid">
       <div className="service-card">
         <div className="service-icon purple">
@@ -161,124 +161,97 @@ const ProfileTab = ({ user, logout }) => {
 
   const initials = profile ? `${profile.firstName?.[0] || ""}${profile.lastName?.[0] || ""}`.toUpperCase() : "??";
 
-  if (loading) return <div style={{ textAlign: 'center', padding: 60 }}><div style={{ fontSize: 40 }}>⏳</div><p style={{ color: '#888' }}>Loading profile...</p></div>;
-  if (!profile && !user) return <div style={{ textAlign: 'center', padding: 60 }}><p>Profile could not be loaded.</p><button onClick={logout} style={ps.logoutBtn}>Sign Out</button></div>;
+  if (loading) return <div className="text-center p-[60px]"><div className="text-[40px]">⏳</div><p className="text-[#888]">Loading profile...</p></div>;
+  if (!profile && !user) return <div className="text-center p-[60px]"><p>Profile could not be loaded.</p><button onClick={logout} className="w-full flex items-center justify-center gap-2.5 py-3.5 px-6 rounded-xl border border-red-500 bg-white text-red-500 text-[15px] font-semibold cursor-pointer mb-5 transition-all duration-200 hover:bg-red-50">Sign Out</button></div>;
 
   const currentProfile = profile || user;
 
   return (
-    <div style={{ maxWidth: 640, margin: '0 auto' }}>
-      {successMsg && <div style={ps.successBanner}>{successMsg}</div>}
-      {pwSuccess && <div style={ps.successBanner}>{pwSuccess}</div>}
+    <div className="max-w-[640px] mx-auto">
+      {successMsg && <div className="py-3 px-4 bg-[#dcfce7] text-[#16a34a] rounded-lg text-sm font-medium mb-4 text-center">{successMsg}</div>}
+      {pwSuccess && <div className="py-3 px-4 bg-[#dcfce7] text-[#16a34a] rounded-lg text-sm font-medium mb-4 text-center">{pwSuccess}</div>}
 
-      <div style={ps.profileCard}>
-        <div style={ps.profileHeader}>
-          <div style={ps.avatarLarge}>{initials}</div>
+      <div className="bg-white rounded-2xl p-6 mb-4 shadow-[0_2px_10px_rgba(0,0,0,0.06)]">
+        <div className="flex items-center gap-5">
+          <div className="w-[72px] h-[72px] rounded-full bg-gradient-to-br from-[#5b5f97] to-[#8b5cf6] flex items-center justify-center text-white font-bold text-2xl shrink-0">{initials}</div>
           <div>
-            <h2 style={ps.profileName}>{currentProfile.firstName} {currentProfile.lastName}</h2>
-            <p style={ps.profileEmail}>{currentProfile.email}</p>
-            <span style={ps.roleBadge}>{currentProfile.role || currentProfile.userType || "Scholar"}</span>
+            <h2 className="text-xl font-bold text-[#1a1a2e] m-0">{currentProfile.firstName} {currentProfile.lastName}</h2>
+            <p className="text-sm text-[#888] my-1">{currentProfile.email}</p>
+            <span className="inline-block py-[3px] px-3 rounded-xl bg-[#ede9fe] text-[#5b5f97] text-xs font-semibold capitalize">{currentProfile.role || currentProfile.userType || "Scholar"}</span>
           </div>
         </div>
       </div>
 
-      <div style={ps.sectionCard}>
-        <div style={ps.sectionHeader}>
-          <h3 style={ps.sectionTitle}>Account Information</h3>
-          {!editing && <button onClick={() => setEditing(true)} style={ps.editBtn}>Edit</button>}
+      <div className="bg-white rounded-2xl p-6 mb-4 shadow-[0_2px_10px_rgba(0,0,0,0.06)]">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-base font-semibold text-[#1a1a2e] m-0">Account Information</h3>
+          {!editing && <button onClick={() => setEditing(true)} className="py-1.5 px-4 rounded-lg border border-[#5b5f97] bg-transparent text-[#5b5f97] text-[13px] font-medium cursor-pointer hover:bg-[#5b5f97] hover:text-white transition-colors">Edit</button>}
         </div>
         {editing ? (
-          <div style={ps.formGrid}>
-            <div style={ps.formGroup}>
-              <label style={ps.label}>First Name</label>
-              <input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} style={ps.input} />
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[13px] font-medium text-[#555]">First Name</label>
+              <input value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className="py-2.5 px-3.5 border border-[#e0e0e0] rounded-lg text-sm outline-none transition-colors duration-200 focus:border-[#5b5f97]" />
             </div>
-            <div style={ps.formGroup}>
-              <label style={ps.label}>Last Name</label>
-              <input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} style={ps.input} />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[13px] font-medium text-[#555]">Last Name</label>
+              <input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className="py-2.5 px-3.5 border border-[#e0e0e0] rounded-lg text-sm outline-none transition-colors duration-200 focus:border-[#5b5f97]" />
             </div>
-            <div style={ps.btnRow}>
-              <button onClick={handleSave} disabled={saving} style={ps.saveBtn}>{saving ? "Saving..." : "Save Changes"}</button>
-              <button onClick={() => { setEditing(false); setForm({ firstName: currentProfile.firstName, lastName: currentProfile.lastName }); }} style={ps.cancelBtn}>Cancel</button>
+            <div className="flex gap-3 mt-1">
+              <button onClick={handleSave} disabled={saving} className="py-2.5 px-6 rounded-lg border-none bg-[#5b5f97] text-white text-sm font-semibold cursor-pointer disabled:opacity-50 hover:bg-[#4a4e7d] transition-colors">{saving ? "Saving..." : "Save Changes"}</button>
+              <button onClick={() => { setEditing(false); setForm({ firstName: currentProfile.firstName, lastName: currentProfile.lastName }); }} className="py-2.5 px-6 rounded-lg border border-[#ddd] bg-white text-[#666] text-sm font-medium cursor-pointer hover:bg-gray-50 transition-colors">Cancel</button>
             </div>
           </div>
         ) : (
-          <div style={ps.infoGrid}>
-            <div style={ps.infoRow}><span style={ps.infoLabel}>First Name</span><span style={ps.infoValue}>{currentProfile.firstName}</span></div>
-            <div style={ps.infoRow}><span style={ps.infoLabel}>Last Name</span><span style={ps.infoValue}>{currentProfile.lastName}</span></div>
-            <div style={ps.infoRow}><span style={ps.infoLabel}>Email</span><span style={ps.infoValue}>{currentProfile.email}</span></div>
-            <div style={ps.infoRow}><span style={ps.infoLabel}>Role</span><span style={{ ...ps.infoValue, textTransform: 'capitalize' }}>{currentProfile.role || currentProfile.userType || "Scholar"}</span></div>
-            <div style={ps.infoRow}><span style={ps.infoLabel}>Scholarship Type</span><span style={ps.infoValue}>{currentProfile.scholarshipType || "N/A"}</span></div>
-            <div style={ps.infoRow}><span style={ps.infoLabel}>Status</span><span style={{ ...ps.infoValue, textTransform: 'capitalize', color: currentProfile.status === 'active' ? '#16a34a' : '#888' }}>{currentProfile.status || "active"}</span></div>
+          <div className="flex flex-col gap-0">
+            <div className="flex justify-between items-center py-3 border-b border-[#f3f4f6]"><span className="text-sm text-[#888]">First Name</span><span className="text-sm font-medium text-[#1a1a2e]">{currentProfile.firstName}</span></div>
+            <div className="flex justify-between items-center py-3 border-b border-[#f3f4f6]"><span className="text-sm text-[#888]">Last Name</span><span className="text-sm font-medium text-[#1a1a2e]">{currentProfile.lastName}</span></div>
+            <div className="flex justify-between items-center py-3 border-b border-[#f3f4f6]"><span className="text-sm text-[#888]">Email</span><span className="text-sm font-medium text-[#1a1a2e]">{currentProfile.email}</span></div>
+            <div className="flex justify-between items-center py-3 border-b border-[#f3f4f6]"><span className="text-sm text-[#888]">Role</span><span className="text-sm font-medium text-[#1a1a2e] capitalize">{currentProfile.role || currentProfile.userType || "Scholar"}</span></div>
+            <div className="flex justify-between items-center py-3 border-b border-[#f3f4f6]"><span className="text-sm text-[#888]">Scholarship Type</span><span className="text-sm font-medium text-[#1a1a2e]">{currentProfile.scholarshipType || "N/A"}</span></div>
+            <div className="flex justify-between items-center py-3 border-b border-[#f3f4f6]"><span className="text-sm text-[#888]">Status</span><span className={`text-sm font-medium capitalize ${currentProfile.status === 'active' ? 'text-[#16a34a]' : 'text-[#888]'}`}>{currentProfile.status || "active"}</span></div>
           </div>
         )}
       </div>
 
-      <div style={ps.sectionCard}>
-        <div style={ps.sectionHeader}>
-          <h3 style={ps.sectionTitle}>Security</h3>
-          {!changingPw && <button onClick={() => setChangingPw(true)} style={ps.editBtn}>Change Password</button>}
+      <div className="bg-white rounded-2xl p-6 mb-4 shadow-[0_2px_10px_rgba(0,0,0,0.06)]">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-base font-semibold text-[#1a1a2e] m-0">Security</h3>
+          {!changingPw && <button onClick={() => setChangingPw(true)} className="py-1.5 px-4 rounded-lg border border-[#5b5f97] bg-transparent text-[#5b5f97] text-[13px] font-medium cursor-pointer hover:bg-[#5b5f97] hover:text-white transition-colors">Change Password</button>}
         </div>
         {changingPw ? (
-          <div style={ps.formGrid}>
-            {pwError && <div style={ps.errorBanner}>{pwError}</div>}
-            <div style={ps.formGroup}>
-              <label style={ps.label}>Current Password</label>
-              <input type="password" value={pwForm.currentPassword} onChange={(e) => setPwForm({ ...pwForm, currentPassword: e.target.value })} style={ps.input} />
+          <div className="flex flex-col gap-4">
+            {pwError && <div className="py-3 px-4 bg-[#fee2e2] text-[#dc2626] rounded-lg text-sm font-medium">{pwError}</div>}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[13px] font-medium text-[#555]">Current Password</label>
+              <input type="password" value={pwForm.currentPassword} onChange={(e) => setPwForm({ ...pwForm, currentPassword: e.target.value })} className="py-2.5 px-3.5 border border-[#e0e0e0] rounded-lg text-sm outline-none transition-colors duration-200 focus:border-[#5b5f97]" />
             </div>
-            <div style={ps.formGroup}>
-              <label style={ps.label}>New Password</label>
-              <input type="password" value={pwForm.newPassword} onChange={(e) => setPwForm({ ...pwForm, newPassword: e.target.value })} style={ps.input} />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[13px] font-medium text-[#555]">New Password</label>
+              <input type="password" value={pwForm.newPassword} onChange={(e) => setPwForm({ ...pwForm, newPassword: e.target.value })} className="py-2.5 px-3.5 border border-[#e0e0e0] rounded-lg text-sm outline-none transition-colors duration-200 focus:border-[#5b5f97]" />
             </div>
-            <div style={ps.formGroup}>
-              <label style={ps.label}>Confirm New Password</label>
-              <input type="password" value={pwForm.confirmPassword} onChange={(e) => setPwForm({ ...pwForm, confirmPassword: e.target.value })} style={ps.input} />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[13px] font-medium text-[#555]">Confirm New Password</label>
+              <input type="password" value={pwForm.confirmPassword} onChange={(e) => setPwForm({ ...pwForm, confirmPassword: e.target.value })} className="py-2.5 px-3.5 border border-[#e0e0e0] rounded-lg text-sm outline-none transition-colors duration-200 focus:border-[#5b5f97]" />
             </div>
-            <div style={ps.btnRow}>
-              <button onClick={handleChangePassword} disabled={pwSaving} style={ps.saveBtn}>{pwSaving ? "Updating..." : "Update Password"}</button>
-              <button onClick={() => { setChangingPw(false); setPwError(""); setPwForm({ currentPassword: "", newPassword: "", confirmPassword: "" }); }} style={ps.cancelBtn}>Cancel</button>
+            <div className="flex gap-3 mt-1">
+              <button onClick={handleChangePassword} disabled={pwSaving} className="py-2.5 px-6 rounded-lg border-none bg-[#5b5f97] text-white text-sm font-semibold cursor-pointer disabled:opacity-50 hover:bg-[#4a4e7d] transition-colors">{pwSaving ? "Updating..." : "Update Password"}</button>
+              <button onClick={() => { setChangingPw(false); setPwError(""); setPwForm({ currentPassword: "", newPassword: "", confirmPassword: "" }); }} className="py-2.5 px-6 rounded-lg border border-[#ddd] bg-white text-[#666] text-sm font-medium cursor-pointer hover:bg-gray-50 transition-colors">Cancel</button>
             </div>
           </div>
         ) : (
-          <p style={{ color: '#888', fontSize: 14, margin: 0 }}>Your password is securely stored. Click "Change Password" to update it.</p>
+          <p className="text-[#888] text-sm m-0">Your password is securely stored. Click "Change Password" to update it.</p>
         )}
       </div>
 
-      <button onClick={logout} style={ps.logoutBtn}>
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ width: 20, height: 20 }}>
+      <button onClick={logout} className="w-full flex items-center justify-center gap-2.5 py-3.5 px-6 rounded-xl border border-red-500 bg-white text-red-500 text-[15px] font-semibold cursor-pointer mb-5 transition-all duration-200 hover:bg-red-50">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} className="w-5 h-5">
           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
         </svg>
         Sign Out
       </button>
     </div>
   );
-};
-
-const ps = {
-  profileCard: { background: '#fff', borderRadius: 16, padding: 24, marginBottom: 16, boxShadow: '0 2px 10px rgba(0,0,0,0.06)' },
-  profileHeader: { display: 'flex', alignItems: 'center', gap: 20 },
-  avatarLarge: { width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg, #5b5f97 0%, #8b5cf6 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 24, flexShrink: 0 },
-  profileName: { fontSize: 20, fontWeight: 700, color: '#1a1a2e', margin: 0 },
-  profileEmail: { fontSize: 14, color: '#888', margin: '4px 0 8px' },
-  roleBadge: { display: 'inline-block', padding: '3px 12px', borderRadius: 12, background: '#ede9fe', color: '#5b5f97', fontSize: 12, fontWeight: 600, textTransform: 'capitalize' },
-  sectionCard: { background: '#fff', borderRadius: 16, padding: 24, marginBottom: 16, boxShadow: '0 2px 10px rgba(0,0,0,0.06)' },
-  sectionHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  sectionTitle: { fontSize: 16, fontWeight: 600, color: '#1a1a2e', margin: 0 },
-  editBtn: { padding: '6px 16px', borderRadius: 8, border: '1px solid #5b5f97', background: 'transparent', color: '#5b5f97', fontSize: 13, fontWeight: 500, cursor: 'pointer' },
-  infoGrid: { display: 'flex', flexDirection: 'column', gap: 0 },
-  infoRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid #f3f4f6' },
-  infoLabel: { fontSize: 14, color: '#888' },
-  infoValue: { fontSize: 14, fontWeight: 500, color: '#1a1a2e' },
-  formGrid: { display: 'flex', flexDirection: 'column', gap: 16 },
-  formGroup: { display: 'flex', flexDirection: 'column', gap: 6 },
-  label: { fontSize: 13, fontWeight: 500, color: '#555' },
-  input: { padding: '10px 14px', border: '1px solid #e0e0e0', borderRadius: 8, fontSize: 14, outline: 'none', transition: 'border-color 0.2s' },
-  btnRow: { display: 'flex', gap: 12, marginTop: 4 },
-  saveBtn: { padding: '10px 24px', borderRadius: 8, border: 'none', background: '#5b5f97', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer' },
-  cancelBtn: { padding: '10px 24px', borderRadius: 8, border: '1px solid #ddd', background: '#fff', color: '#666', fontSize: 14, fontWeight: 500, cursor: 'pointer' },
-  logoutBtn: { width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '14px 24px', borderRadius: 12, border: '1px solid #ef4444', background: '#fff', color: '#ef4444', fontSize: 15, fontWeight: 600, cursor: 'pointer', marginBottom: 20, transition: 'all 0.2s' },
-  successBanner: { padding: '12px 16px', background: '#dcfce7', color: '#16a34a', borderRadius: 10, fontSize: 14, fontWeight: 500, marginBottom: 16, textAlign: 'center' },
-  errorBanner: { padding: '12px 16px', background: '#fee2e2', color: '#dc2626', borderRadius: 10, fontSize: 14, fontWeight: 500 },
 };
 
 const ScholarDashboard = () => {
@@ -296,58 +269,62 @@ const ScholarDashboard = () => {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8f9fc', paddingBottom: 100 }}>
+    <div className="min-h-screen bg-[#f8f9fc] pb-[100px]">
       {/* Top Header */}
-      <header style={styles.topbar}>
-        <div style={styles.brandWrap}>
-          <div style={styles.brandLogo}>
-            <img src={kkfiLogo} alt="KKFI Logo" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} />
+      <header className="flex items-center justify-between py-[15px] px-[30px] bg-white border-b border-[#eee] sticky top-0 z-50">
+        <div className="flex items-center gap-3">
+          <div className="w-[45px] h-[45px] rounded-full overflow-hidden bg-[#f8f9fc] flex items-center justify-center">
+            <img src={kkfiLogo} alt="KKFI Logo" className="w-10 h-10 rounded-full object-cover" />
           </div>
-          <span style={styles.brandText}>ISKKOLAR</span>
+          <span className="font-bold text-base text-[#5b5f97] tracking-[0.5px]">ISKKOLAR</span>
         </div>
-        <div style={styles.topbarRight}>
-          <button style={styles.notificationBtn}>
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ width: 22, height: 22 }}>
+        <div className="flex items-center gap-[15px]">
+          <button onClick={() => setActiveTab("notification")} className="w-10 h-10 rounded-full border-none bg-[#f8f9fc] cursor-pointer flex items-center justify-center text-[#666] relative hover:bg-gray-200 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-[22px] h-[22px]">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
             </svg>
-            <span style={styles.notificationBadge}></span>
+            <span className="absolute top-1.5 right-2 w-2 h-2 bg-[#e8315b] rounded-full"></span>
           </button>
-          <div style={styles.userMenu}>
-            <div style={styles.userAvatar}>{initials}</div>
-            <div style={styles.userInfo}>
-              <span style={styles.userName}>{user?.firstName} {user?.lastName}</span>
-              <span style={styles.userRole}>Active Scholar</span>
+          <div className="flex items-center gap-2.5 cursor-pointer py-1.5 pr-3 pl-1.5 rounded-[25px] transition-colors hover:bg-gray-100" onClick={() => setActiveTab("profile")}>
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#5b5f97] to-[#8b5cf6] flex items-center justify-center text-white font-semibold text-[13px]">{initials}</div>
+            <div className="flex flex-col">
+              <span className="text-[13px] font-semibold text-[#333]">{user?.firstName} {user?.lastName}</span>
+              <span className="text-[11px] text-[#888]">Active Scholar</span>
             </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main style={styles.mainContent}>
+      <main className="py-[25px] px-[30px] max-w-[1200px] mx-auto">
         {activeTab === "home" && <ScholarHomeTab user={user} />}
         {activeTab === "profile" && <ProfileTab user={user} logout={logout} />}
         {(activeTab === "activities" || activeTab === "application") && (
-          <div style={{ textAlign: 'center', paddingTop: 60 }}>
-            <div style={{ fontSize: 56 }}>🚧</div>
-            <h2 style={{ fontSize: 22, fontWeight: 700, color: '#1a1a2e', marginTop: 12, textTransform: 'capitalize' }}>{activeTab}</h2>
-            <p style={{ color: '#888' }}>Coming Soon</p>
+          <div className="text-center pt-[60px]">
+            <div className="text-[56px]">🚧</div>
+            <h2 className="text-[22px] font-bold text-[#1a1a2e] mt-3 capitalize">{activeTab}</h2>
+            <p className="text-[#888]">Coming Soon</p>
           </div>
         )}
       </main>
 
       {/* Bottom Navigation */}
-      <div style={styles.bottomNavWrapper}>
-        <nav style={styles.bottomNav}>
+      <div className="fixed bottom-4 left-0 right-0 flex justify-center z-50 pointer-events-none">
+        <nav className="flex justify-around items-center bg-[#5b5f97] rounded-[20px] py-2.5 px-7 gap-6 shadow-[0_8px_30px_rgba(91,95,151,0.35)] pointer-events-auto min-w-[360px] max-w-[480px]">
           {navItems.map((item) => {
             const isActive = item.key === activeTab;
             return (
-              <div key={item.key} onClick={() => setActiveTab(item.key)} style={{ ...styles.navItem, opacity: isActive ? 1 : 0.7 }}>
-                <div style={{ ...styles.navIcon, ...(isActive ? styles.navIconActive : {}) }}>
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ width: 20, height: 20 }}>
+              <div 
+                key={item.key} 
+                onClick={() => setActiveTab(item.key)} 
+                className={`flex flex-col items-center gap-1 cursor-pointer no-underline text-[11px] text-white transition-all duration-200 ${isActive ? 'opacity-100' : 'opacity-70 hover:opacity-100'}`}
+              >
+                <div className={`flex items-center justify-center w-[38px] h-[38px] rounded-xl transition-colors duration-200 ${isActive ? 'bg-white/20' : ''}`}>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
                   </svg>
                 </div>
-                {isActive && <span style={styles.navLabel}>{item.label}</span>}
+                {isActive && <span className="font-semibold text-[11px]">{item.label}</span>}
               </div>
             );
           })}
@@ -355,28 +332,6 @@ const ScholarDashboard = () => {
       </div>
     </div>
   );
-};
-
-const styles = {
-  topbar: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px 30px', background: '#fff', borderBottom: '1px solid #eee', position: 'sticky', top: 0, zIndex: 50 },
-  brandWrap: { display: 'flex', alignItems: 'center', gap: 12 },
-  brandLogo: { width: 45, height: 45, borderRadius: '50%', overflow: 'hidden', background: '#f8f9fc', display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  brandText: { fontWeight: 700, fontSize: 16, color: '#5b5f97', letterSpacing: 0.5 },
-  topbarRight: { display: 'flex', alignItems: 'center', gap: 15 },
-  notificationBtn: { width: 40, height: 40, borderRadius: '50%', border: 'none', background: '#f8f9fc', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666', position: 'relative' },
-  notificationBadge: { position: 'absolute', top: 6, right: 6, width: 8, height: 8, background: '#e8315b', borderRadius: '50%' },
-  userMenu: { display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '6px 12px 6px 6px', borderRadius: 25 },
-  userAvatar: { width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, #5b5f97 0%, #8b5cf6 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 600, fontSize: 14 },
-  userInfo: { display: 'flex', flexDirection: 'column' },
-  userName: { fontSize: 13, fontWeight: 600, color: '#333' },
-  userRole: { fontSize: 11, color: '#888' },
-  mainContent: { padding: '25px 30px', maxWidth: 1200, margin: '0 auto' },
-  bottomNavWrapper: { position: 'fixed', bottom: 16, left: 0, right: 0, display: 'flex', justifyContent: 'center', zIndex: 50, pointerEvents: 'none' },
-  bottomNav: { display: 'flex', justifyContent: 'space-around', alignItems: 'center', background: '#5b5f97', borderRadius: 20, padding: '10px 28px', gap: 24, boxShadow: '0 8px 30px rgba(91,95,151,0.35)', pointerEvents: 'auto', minWidth: 360, maxWidth: 480 },
-  navItem: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, cursor: 'pointer', textDecoration: 'none', fontSize: 11, color: '#fff', transition: 'all 0.2s' },
-  navIcon: { display: 'flex', alignItems: 'center', justifyContent: 'center', width: 38, height: 38, borderRadius: 10, transition: 'background 0.2s' },
-  navIconActive: { background: 'rgba(255,255,255,0.2)' },
-  navLabel: { fontWeight: 600, fontSize: 11 },
 };
 
 export default ScholarDashboard;

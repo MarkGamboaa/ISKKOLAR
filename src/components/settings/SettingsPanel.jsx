@@ -87,10 +87,10 @@ const SettingsPanel = ({ user, onLogout }) => {
               >
                 Cancel
               </button>
-              <Button style={{ background: '#5b5f97', color: 'white' }} onClick={() => setIsEditingProfile(false)}>Save Profile Changes</Button>
+              <Button className="bg-[#5b5f97] text-white hover:bg-[#4a4e7d]" onClick={() => setIsEditingProfile(false)}>Save Profile Changes</Button>
             </>
           ) : (
-            <Button style={{ background: '#5b5f97', color: 'white' }} onClick={() => setIsEditingProfile(true)}>Edit Profile</Button>
+            <Button className="bg-[#5b5f97] text-white hover:bg-[#4a4e7d]" onClick={() => setIsEditingProfile(true)}>Edit Profile</Button>
           )}
         </div>
       </div>
@@ -112,7 +112,7 @@ const SettingsPanel = ({ user, onLogout }) => {
           </div>
         </div>
         <div className="flex justify-end mt-4">
-          <Button style={{ background: '#6b7280', color: 'white' }}>Update Password</Button>
+          <Button className="bg-[#6b7280] text-white hover:bg-gray-600">Update Password</Button>
         </div>
       </div>
 
@@ -125,7 +125,7 @@ const SettingsPanel = ({ user, onLogout }) => {
           <label className="flex items-center gap-3 cursor-pointer"><input type="checkbox" className="w-4 h-4 text-[#5b5f97] rounded border-gray-300 focus:ring-[#5b5f97]" /> <span className="font-medium">SMS notifications for urgent matters</span></label>
         </div>
         <div className="flex justify-end mt-4">
-          <Button style={{ background: '#5b5f97', color: 'white' }}>Save Preferences</Button>
+          <Button className="bg-[#5b5f97] text-white hover:bg-[#4a4e7d]">Save Preferences</Button>
         </div>
       </div>
 
@@ -139,14 +139,14 @@ const SettingsPanel = ({ user, onLogout }) => {
               <Input label="Income Threshold Limit" value="15,000" />
             </div>
             <div className="flex justify-end mt-4">
-              <Button style={{ background: '#5b5f97', color: 'white' }}>Update System Settings</Button>
+              <Button className="bg-[#5b5f97] text-white hover:bg-[#4a4e7d]">Update System Settings</Button>
             </div>
           </div>
 
           <div className="dashboard-card mb-6 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
               <h3 className="card-title text-lg font-semibold text-gray-800">Manage Admin Users</h3>
-              <Button style={{ background: '#5b5f97', color: 'white' }}>+ Add New Admin User</Button>
+              <Button className="bg-[#5b5f97] text-white hover:bg-[#4a4e7d]">+ Add New Admin User</Button>
             </div>
             <div className="overflow-x-auto mt-2">
               <table className="w-full text-left border-collapse">
