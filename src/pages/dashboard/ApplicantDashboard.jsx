@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../context/AuthContext";
 import kkfiLogo from "../../assets/KKFI LOGO.png";
 import * as profileService from "../../services/profileService";
+import TertiaryScholarshipForm from "../../components/forms/TertiaryScholarshipForm";
 
-const ApplicantHomeTab = () => {
+const ApplicantHomeTab = ({ onSelectProgram }) => {
   const programs = [
     {
       title: "TERTIARY SCHOLARSHIP PROGRAM",
@@ -42,7 +43,15 @@ const ApplicantHomeTab = () => {
 
       <div className="grid gap-[18px] grid-cols-[repeat(auto-fit,minmax(270px,1fr))]">
         {programs.map((program) => (
-          <article key={program.title} className="bg-white rounded-2xl overflow-hidden shadow-[0_10px_22px_rgba(27,36,63,0.1)] border border-[#eceff6]">
+          <article 
+            key={program.title} 
+            onClick={() => {
+              if (program.title === "TERTIARY SCHOLARSHIP PROGRAM") {
+                onSelectProgram(program);
+              }
+            }}
+            className={`bg-white rounded-2xl overflow-hidden shadow-[0_10px_22px_rgba(27,36,63,0.1)] border border-[#eceff6] transition-transform duration-200 ${program.title === "TERTIARY SCHOLARSHIP PROGRAM" ? 'cursor-pointer hover:-translate-y-1 hover:shadow-[0_15px_30px_rgba(27,36,63,0.15)]' : 'cursor-default opacity-80'}`}
+          >
             <div 
               className="bg-cover bg-center min-h-[180px] p-6 flex items-end"
               style={{ backgroundImage: `linear-gradient(rgba(37, 54, 79, 0.0), rgba(37, 54, 79, 0.9)), url('${program.image}')` }}
@@ -55,7 +64,7 @@ const ApplicantHomeTab = () => {
                 <span className="text-[13px] text-[#8a8f9e]">{program.tag}</span>
               </div>
               <p className="my-2.5 text-sm text-[#70778a]">{program.requirement}</p>
-              <p className="m-0 text-sm text-[#70778a] leading-[1.6]">{program.desc}</p>
+              <p className="m-0 text-sm text-[#70778a] leading-[1.6] mb-2">{program.desc}</p>
             </div>
           </article>
         ))}
@@ -218,6 +227,9 @@ const ProfileTab = ({ user, logout }) => {
 const ApplicantDashboard = () => {
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState("home");
+  const [selectedProgram, setSelectedProgram] = useState(null);
+  const [isApplying, setIsApplying] = useState(false);
+  
   const initials = user
     ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase()
     : "??";
@@ -258,7 +270,113 @@ const ApplicantDashboard = () => {
 
       {/* Main Content */}
       <main className="py-[25px] px-[30px] max-w-[1200px] mx-auto">
-        {activeTab === "home" && <ApplicantHomeTab />}
+        {activeTab === "home" && !selectedProgram && (
+          <ApplicantHomeTab onSelectProgram={setSelectedProgram} />
+        )}
+
+        {activeTab === "home" && selectedProgram && (
+          <div className="max-w-4xl mx-auto space-y-6">
+            {!isApplying && (
+              <>
+                {/* Program Header */}
+                <div 
+                  className="relative rounded-2xl overflow-hidden h-48 md:h-64 flex items-end p-8"
+                  style={{ backgroundImage: `linear-gradient(rgba(91, 95, 151, 0.2), rgba(91, 95, 151, 0.9)), url('${selectedProgram.image}')`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+                >
+                  <button 
+                    onClick={() => {
+                      setSelectedProgram(null);
+                      setIsApplying(false);
+                    }}
+                    className="absolute top-6 left-6 text-white font-medium flex items-center gap-2 hover:underline cursor-pointer bg-transparent border-none p-0"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Back to Scholarships
+                  </button>
+                  
+                  <div>
+                    <h1 className="text-white text-3xl md:text-4xl font-extrabold mb-3">{selectedProgram.title}</h1>
+                    <span className="inline-block px-4 py-1.5 bg-white/20 text-white rounded-full text-sm font-medium backdrop-blur-sm">
+                      {selectedProgram.tag}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Overview content */}
+                <div className="bg-white rounded-2xl p-8 shadow-[0_4px_20px_rgba(0,0,0,0.08)]">
+                  <h2 className="text-xl font-bold text-[#3d4076] border-b border-gray-100 pb-4 mb-6">Overview</h2>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div className="bg-[#f8f9fc] p-5 rounded-xl">
+                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Grant Amount</span>
+                      <p className="text-[#3d4076] font-bold mt-1">{selectedProgram.support}</p>
+                    </div>
+                    <div className="bg-[#f8f9fc] p-5 rounded-xl">
+                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Duration</span>
+                      <p className="text-[#3d4076] font-bold mt-1">1 Academic Year</p>
+                    </div>
+                    <div className="bg-[#f8f9fc] p-5 rounded-xl">
+                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Application Deadline</span>
+                      <p className="text-[#3d4076] font-bold mt-1">March 31, 2026</p>
+                    </div>
+                    <div className="bg-[#f8f9fc] p-5 rounded-xl">
+                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</span>
+                      <p className="text-[#5b5f97] font-bold mt-1">Open for Application</p>
+                    </div>
+                  </div>
+
+                  <p className="text-gray-600 leading-relaxed mb-8">{selectedProgram.desc} This program aims to provide financial assistance to deserving students who demonstrate academic excellence and commitment to community service.</p>
+
+                  <h2 className="text-xl font-bold text-[#3d4076] border-b border-gray-100 pb-4 mb-6">Requirements</h2>
+                  <ul className="space-y-4 mb-8">
+                    <li className="flex items-start gap-3">
+                      <span className="text-[#21cf81] mt-0.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" /></svg>
+                      </span>
+                      <span className="text-gray-600">Must be a Filipino citizen</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="text-[#21cf81] mt-0.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" /></svg>
+                      </span>
+                      <span className="text-gray-600">{selectedProgram.requirement}</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="text-[#21cf81] mt-0.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" /></svg>
+                      </span>
+                      <span className="text-gray-600">Currently enrolled in a state university or college</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="text-[#21cf81] mt-0.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" /></svg>
+                      </span>
+                      <span className="text-gray-600">Proof of family income (not exceeding ₱250,000 annually)</span>
+                    </li>
+                  </ul>
+                  
+                  <div className="flex justify-end">
+                    <button 
+                      onClick={() => setIsApplying(true)}
+                      className="py-3.5 px-8 bg-[#5b5f97] text-white rounded-xl font-semibold hover:bg-[#4a4e7d] transition-colors cursor-pointer border-none"
+                    >
+                      Apply Now
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {isApplying && (
+              <div className="w-full">
+                <TertiaryScholarshipForm onBack={() => setIsApplying(false)} />
+              </div>
+            )}
+          </div>
+        )}
+
         {activeTab === "profile" && <ProfileTab user={user} logout={logout} />}
         {(activeTab === "application" || activeTab === "notification") && (
           <div className="text-center pt-[60px]">
