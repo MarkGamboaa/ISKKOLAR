@@ -5,6 +5,7 @@ import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import AdminDashboard from "./pages/dashboard/AdminDashboard";
 import StaffDashboard from "./pages/dashboard/StaffDashboard";
 import ScholarDashboard from "./pages/dashboard/ScholarDashboard";
+import ApplicantDashboard from "./pages/dashboard/ApplicantDashboard";
 import PrivateRoute from "./components/layout/PrivateRoute";
 
 function App() {
@@ -38,10 +39,10 @@ function App() {
         path="/dashboard/applicant/*"
         element={
           <PrivateRoute allowedRoles={["applicant"]}>
-            <ScholarDashboard />
+            <ApplicantDashboard />
           </PrivateRoute>
         }
-/>
+      />
       {/* Protected — Scholar / Applicant */}
       <Route
         path="/dashboard/scholar/*"
