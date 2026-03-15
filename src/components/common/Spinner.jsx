@@ -11,8 +11,8 @@ const Spinner = ({ size = "md", className = "" }) => {
         ${sizeClasses[size]}
         border-primary/20 border-t-primary rounded-full
         ${className}
+        animate-[spin_0.6s_linear_infinite]
       `}
-      style={{ animation: "spin 0.6s linear infinite" }}
       role="status"
       aria-label="Loading"
     >

@@ -318,7 +318,7 @@ const AdminDashboard = () => {
   ];
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div className="flex min-h-screen">
       <Sidebar
         sections={sidebarSections}
         isOpen={sidebarOpen}
@@ -330,7 +330,7 @@ const AdminDashboard = () => {
         }}
       />
 
-      <main style={{ flex: 1, marginLeft: 220, padding: 30, minHeight: '100vh', background: '#f8f9fc' }}>
+      <main className="flex-1 ml-[220px] p-[30px] min-h-screen bg-[#f8f9fc]">
         {/* Mobile menu button */}
         <button onClick={() => setSidebarOpen(true)} className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-md" aria-label="Open sidebar">
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
@@ -355,7 +355,7 @@ const AdminDashboard = () => {
         {!["dashboard", "scholars", "staff", "settings"].includes(activeTab) && (
           <div className="text-center py-20">
             <div className="text-6xl mb-4">🚧</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2" style={{ textTransform: 'capitalize' }}>{activeTab}</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2 capitalize">{activeTab}</h2>
             <p className="text-gray-500">Coming Soon</p>
           </div>
         )}
