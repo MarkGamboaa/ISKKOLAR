@@ -11,7 +11,7 @@ const TertiaryProgramDetail = ({ onApply }) => (
         <h2 className="text-lg font-bold text-[#3d4076] m-0">Background</h2>
       </div>
       <p className="text-gray-600 leading-relaxed m-0">
-        The Kalipunan ng Kristiyanong Kabataan Foundation, Inc. (KKFI) supports deserving students across the Philippines through the Tertiary Scholarship Program. This initiative provides financial assistance to academically qualified students enrolled in state universities, empowering future leaders and fostering educational excellence across the regions.
+        Supporting students across the Philippines to overcome financial barriers and achieve their dreams of higher education in public state universities
       </p>
     </div>
 
