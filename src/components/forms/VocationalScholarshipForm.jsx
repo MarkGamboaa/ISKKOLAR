@@ -1,25 +1,22 @@
 import React, { useState } from 'react';
 
-const TertiaryScholarshipForm = ({ onBack }) => {
+const VocationalScholarshipForm = ({ onBack }) => {
   const [currentStep, setCurrentStep] = useState(1);
-  const [termType, setTermType] = useState('Semester');
   const fileInputClass = "block w-full text-sm text-gray-500 file:cursor-pointer file:mr-4 file:py-3 file:px-4 file:border-0 file:border-r file:border-gray-200 file:text-sm file:font-semibold file:bg-gray-50 file:text-[#5b5f97] hover:file:bg-gray-100 border border-gray-200 rounded-lg focus:outline-none cursor-pointer bg-white";
   const totalSteps = 4;
   const [additionalMembers, setAdditionalMembers] = useState([]);
 
   const [form, setForm] = useState({
-    scholarshipType: 'Manila Scholars',
+    scholarshipType: 'TESDA',
     fundType: 'KKFI Funded',
-    incomingFreshman: 'No',
     secondarySchool: '',
     strand: 'STEM',
     yearGraduated: '',
-    tertiarySchool: '',
-    program: '',
-    gradeScale: '1.0 - 5.00 Grading System',
-    yearLevel: '1st',
-    term: '1st',
+    vocationalSchool: '',
+    vocationalProgram: '',
+    courseDuration: '6',
     expectedGradYear: '',
+    completionDate: '',
     fatherName: '',
     fatherStatus: 'Employed',
     fatherOccupation: '',
@@ -31,14 +28,12 @@ const TertiaryScholarshipForm = ({ onBack }) => {
   });
 
   const [files, setFiles] = useState({
-    gradeReport: null,
+    reportCard: null,
     cor: null,
-    currentTermReport: null,
     certificateOfIndigency: null,
     birthCertificate: null,
     incomeCertFather: null,
     incomeCertMother: null,
-    recommendationLetter: null,
     essay: null,
   });
 
@@ -47,7 +42,6 @@ const TertiaryScholarshipForm = ({ onBack }) => {
 
   const handleFormChange = (field, value) => {
     setForm(prev => ({ ...prev, [field]: value }));
-    if (field === 'termType') setTermType(value);
   };
 
   const handleFileChange = (field, file) => {
@@ -59,7 +53,7 @@ const TertiaryScholarshipForm = ({ onBack }) => {
     setCurrentStep(prev => prev + 1);
   };
 
-  const addFamilyMember = () => setAdditionalMembers([...additionalMembers, { name: '', status: 'Employed', occupation: '', income: '' }]);
+  const addFamilyMember = () => setAdditionalMembers([...additionalMembers, { name: '', relationship: 'Child', occupation: '', income: '' }]);
   const removeFamilyMember = (index) => setAdditionalMembers(additionalMembers.filter((_, i) => i !== index));
 
   const updateFamilyMember = (index, field, value) => {
@@ -88,7 +82,7 @@ const TertiaryScholarshipForm = ({ onBack }) => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
           </button>
-          <h2 className="text-xl font-bold text-[#3d4076]">Tertiary Scholarship Program</h2>
+          <h2 className="text-xl font-bold text-[#3d4076]">Vocational and Technology Scholarship</h2>
         </div>
 
         {/* Progress Tracker */}
@@ -112,9 +106,7 @@ const TertiaryScholarshipForm = ({ onBack }) => {
               <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">Scholarship type</label>
                 <select required value={form.scholarshipType} onChange={(e) => handleFormChange('scholarshipType', e.target.value)} className="w-full p-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-[#5b5f97]">
-                  <option>Manila Scholars</option>
-                  <option>Bulacan Scholars</option>
-                  <option>Nationwide Scholars</option>
+                  <option>TESDA</option>
                 </select>
               </div>
               <div>
@@ -122,13 +114,6 @@ const TertiaryScholarshipForm = ({ onBack }) => {
                 <select required value={form.fundType} onChange={(e) => handleFormChange('fundType', e.target.value)} className="w-full p-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-[#5b5f97]">
                   <option>KKFI Funded</option>
                   <option>Partner Funded</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 font-medium mb-1.5">Incoming Freshman?</label>
-                <select required value={form.incomingFreshman} onChange={(e) => handleFormChange('incomingFreshman', e.target.value)} className="w-full p-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-[#5b5f97]">
-                  <option>No</option>
-                  <option>Yes</option>
                 </select>
               </div>
             </div>
@@ -156,60 +141,36 @@ const TertiaryScholarshipForm = ({ onBack }) => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm text-gray-600 font-medium mb-1.5">Grade Report</label>
-                <input required type="file" onChange={(e) => handleFileChange('gradeReport', e.target.files[0])} className={fileInputClass} />
+                <label className="block text-sm text-gray-600 font-medium mb-1.5">Report Card</label>
+                <input required type="file" onChange={(e) => handleFileChange('reportCard', e.target.files[0])} className={fileInputClass} />
               </div>
             </div>
 
-            <h3 className="text-lg font-bold text-[#5b5f97] border-l-4 border-[#5b5f97] pl-3 mt-8 mb-4">Current Tertiary Education</h3>
+            <h3 className="text-lg font-bold text-[#5b5f97] border-l-4 border-[#5b5f97] pl-3 mt-8 mb-4">Vocational / Technical Education</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-gray-600 font-medium mb-1.5">University / College Name</label>
-                <input required type="text" value={form.tertiarySchool} onChange={(e) => handleFormChange('tertiarySchool', e.target.value)} placeholder="Enter School Name" className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5b5f97]" />
+                <label className="block text-sm text-gray-600 font-medium mb-1.5">School Name</label>
+                <input required type="text" value={form.vocationalSchool} onChange={(e) => handleFormChange('vocationalSchool', e.target.value)} placeholder="Enter School Name" className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5b5f97]" />
               </div>
               <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">Program</label>
-                <input required type="text" value={form.program} onChange={(e) => handleFormChange('program', e.target.value)} placeholder="Enter Program" className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5b5f97]" />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 font-medium mb-1.5">Term Type</label>
-                <select required
-                  value={termType}
-                  onChange={(e) => { setTermType(e.target.value); handleFormChange('termType', e.target.value); }}
-                  className="w-full p-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-[#5b5f97]"
-                >
-                  <option>Semester</option>
-                  <option>Trimester</option>
-                  <option>Quarter System</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 font-medium mb-1.5">Grade Scale</label>
-                <select required value={form.gradeScale} onChange={(e) => handleFormChange('gradeScale', e.target.value)} className="w-full p-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-[#5b5f97]">
-                  <option>1.0 - 5.00 Grading System</option>
-                  <option>4.00 GPA System</option>
-                  <option>Percentage System</option>
-                  <option>Letter Grade System</option>
-                </select>
+                <input required type="text" value={form.vocationalProgram} onChange={(e) => handleFormChange('vocationalProgram', e.target.value)} placeholder="Enter Program" className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5b5f97]" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm text-gray-600 font-medium mb-1.5">Year Level</label>
-                  <select required value={form.yearLevel} onChange={(e) => handleFormChange('yearLevel', e.target.value)} className="w-full p-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-[#5b5f97]">
-                    <option>1st</option>
-                    <option>2nd</option>
-                    <option>3rd</option>
-                    <option>4th</option>
+                  <label className="block text-sm text-gray-600 font-medium mb-1.5">Course Duration (months)</label>
+                  <select required value={form.courseDuration} onChange={(e) => handleFormChange('courseDuration', e.target.value)} className="w-full p-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-[#5b5f97]">
+                    <option value="3">3 months</option>
+                    <option value="6">6 months</option>
+                    <option value="9">9 months</option>
+                    <option value="12">12 months</option>
+                    <option value="18">18 months</option>
+                    <option value="24">24 months</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-600 font-medium mb-1.5">Term</label>
-                  <select required value={form.term} onChange={(e) => handleFormChange('term', e.target.value)} className="w-full p-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-[#5b5f97]">
-                    <option>1st</option>
-                    <option>2nd</option>
-                    {(termType === 'Trimester' || termType === 'Quarter System') && <option>3rd</option>}
-                    {termType === 'Quarter System' && <option>4th</option>}
-                  </select>
+                  <label className="block text-sm text-gray-600 font-medium mb-1.5">Completion Date</label>
+                  <input required type="date" value={form.completionDate} onChange={(e) => handleFormChange('completionDate', e.target.value)} className="w-full p-3 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-[#5b5f97]" />
                 </div>
               </div>
               <div>
@@ -220,22 +181,11 @@ const TertiaryScholarshipForm = ({ onBack }) => {
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">COR</label>
                 <input required type="file" onChange={(e) => handleFileChange('cor', e.target.files[0])} className={fileInputClass} />
               </div>
-              {form.incomingFreshman === 'No' && (
-              <div>
-                <label className="block text-sm text-gray-600 font-medium mb-1.5">Current Term Report Card</label>
-                <input required type="file" onChange={(e) => handleFileChange('currentTermReport', e.target.files[0])} className={fileInputClass} />
-              </div>
-              )}
             </div>
 
-            <button
-              type="submit"
-              className="w-full mt-6 py-4 bg-[#5b5f97] text-white rounded-xl font-semibold hover:bg-[#4a4e7d] transition flex justify-center items-center gap-2"
-            >
+            <button type="submit" className="w-full mt-6 py-4 bg-[#5b5f97] text-white rounded-xl font-semibold hover:bg-[#4a4e7d] transition flex justify-center items-center gap-2">
               Next Step
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
             </button>
           </form>
         )}
@@ -265,9 +215,8 @@ const TertiaryScholarshipForm = ({ onBack }) => {
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">Monthly Income</label>
                 <input required type="text" value={form.fatherIncome} onChange={(e) => handleFormChange('fatherIncome', e.target.value)} placeholder="Enter Monthly Income" className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5b5f97]" />
               </div>
-
-
             </div>
+
             <h3 className="text-lg font-bold text-[#5b5f97] border-l-4 border-[#5b5f97] pl-3 mb-4">Mother's Information</h3>
             <div className="space-y-4">
               <div>
@@ -294,17 +243,19 @@ const TertiaryScholarshipForm = ({ onBack }) => {
 
             {additionalMembers.map((member, index) => (
               <div key={index} className="pt-4 border-t border-gray-100 relative">
-                <button type="button" onClick={() => removeFamilyMember(index)} className="absolute top-4 right-0 text-red-500 hover:text-red-700 text-sm font-semibold">
-                  Remove
-                </button>
-                <label className="block text-sm text-gray-600 font-medium mb-1.5 mt-4">Family Member Name</label>
-                <input required type="text" value={member.name} onChange={(e) => updateFamilyMember(index, 'name', e.target.value)} placeholder="Enter Name" className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5b5f97] mb-4" />
+                <button type="button" onClick={() => removeFamilyMember(index)} className="absolute top-4 right-0 text-red-500 hover:text-red-700 text-sm font-semibold">Remove</button>
+                <label className="block text-sm text-gray-600 font-medium mb-1.5 mt-4">Name</label>
+                <input required type="text" value={member.name} onChange={(e) => updateFamilyMember(index, 'name', e.target.value)} placeholder="Enter Guardian's Name" className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5b5f97] mb-4" />
 
-                <label className="block text-sm text-gray-600 font-medium mb-1.5">Employment Status</label>
-                <select required value={member.status} onChange={(e) => updateFamilyMember(index, 'status', e.target.value)} className="w-full p-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-[#5b5f97] mb-4">
-                  <option>Employed</option>
-                  <option>Unemployed</option>
-                  <option>Self-Employed</option>
+                <label className="block text-sm text-gray-600 font-medium mb-1.5">Relationship to Applicant</label>
+                <select required value={member.relationship} onChange={(e) => updateFamilyMember(index, 'relationship', e.target.value)} className="w-full p-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-[#5b5f97] mb-4">
+                  <option>Child</option>
+                  <option>Sibling</option>
+                  <option>Nephew</option>
+                  <option>Niece</option>
+                  <option>Guardian</option>
+                  <option>Grandparent</option>
+                  <option>Other</option>
                 </select>
 
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">Occupation</label>
@@ -317,22 +268,14 @@ const TertiaryScholarshipForm = ({ onBack }) => {
 
             <div className="pt-6">
               <button type="button" onClick={addFamilyMember} className="flex items-center gap-2 text-[#5b5f97] font-semibold text-sm hover:underline">
-
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                 Add Family Member
               </button>
             </div>
 
-            <button
-              type="submit"
-              className="w-full mt-6 py-4 bg-[#5b5f97] text-white rounded-xl font-semibold hover:bg-[#4a4e7d] transition flex justify-center items-center gap-2"
-            >
+            <button type="submit" className="w-full mt-6 py-4 bg-[#5b5f97] text-white rounded-xl font-semibold hover:bg-[#4a4e7d] transition flex justify-center items-center gap-2">
               Next Step
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
             </button>
           </form>
         )}
@@ -359,23 +302,14 @@ const TertiaryScholarshipForm = ({ onBack }) => {
                 <input required type="file" onChange={(e) => handleFileChange('incomeCertMother', e.target.files[0])} className={fileInputClass} />
               </div>
               <div>
-                <label className="block text-sm text-gray-600 font-medium mb-1.5">Recommendation Letter Form (Optional)</label>
-                <input type="file" onChange={(e) => handleFileChange('recommendationLetter', e.target.files[0])} className={fileInputClass} />
-              </div>
-              <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">Essay</label>
                 <input required type="file" onChange={(e) => handleFileChange('essay', e.target.files[0])} className={fileInputClass} />
               </div>
             </div>
 
-            <button
-              type="submit"
-              className="w-full mt-6 py-4 bg-[#5b5f97] text-white rounded-xl font-semibold hover:bg-[#4a4e7d] transition flex justify-center items-center gap-2"
-            >
+            <button type="submit" className="w-full mt-6 py-4 bg-[#5b5f97] text-white rounded-xl font-semibold hover:bg-[#4a4e7d] transition flex justify-center items-center gap-2">
               Next Step
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
             </button>
           </form>
         )}
@@ -389,7 +323,6 @@ const TertiaryScholarshipForm = ({ onBack }) => {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between"><span className="text-gray-500">Scholarship type</span><span className="font-semibold text-gray-900">{form.scholarshipType}</span></div>
                 <div className="flex justify-between"><span className="text-gray-500">Scholarship Fund type</span><span className="font-semibold text-gray-900">{form.fundType}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Incoming Freshman?</span><span className="font-semibold text-gray-900">{form.incomingFreshman}</span></div>
               </div>
             </div>
 
@@ -403,14 +336,14 @@ const TertiaryScholarshipForm = ({ onBack }) => {
               </div>
             </div>
 
-            {/* Tertiary Education Information */}
+            {/* Vocational/Technical Education */}
             <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-              <h3 className="text-md font-bold text-[#5b5f97] border-l-4 border-[#5b5f97] pl-2 mb-3">Tertiary Education Information</h3>
+              <h3 className="text-md font-bold text-[#5b5f97] border-l-4 border-[#5b5f97] pl-2 mb-3">Vocational / Technical Education</h3>
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-gray-500">School Name</span><span className="font-semibold text-gray-900">{form.tertiarySchool || '--'}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Program</span><span className="font-semibold text-gray-900">{form.program || '--'}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Year Level</span><span className="font-semibold text-gray-900">{form.yearLevel}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Term</span><span className="font-semibold text-gray-900">{form.term}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">School Name</span><span className="font-semibold text-gray-900">{form.vocationalSchool || '--'}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Program</span><span className="font-semibold text-gray-900">{form.vocationalProgram || '--'}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Course Duration</span><span className="font-semibold text-gray-900">{form.courseDuration} months</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Completion Date</span><span className="font-semibold text-gray-900">{form.completionDate || '--'}</span></div>
                 <div className="flex justify-between"><span className="text-gray-500">Expected Year of Graduation</span><span className="font-semibold text-gray-900">{form.expectedGradYear || '--'}</span></div>
               </div>
             </div>
@@ -433,8 +366,8 @@ const TertiaryScholarshipForm = ({ onBack }) => {
                 <div key={index} className="mt-2">
                   <div className="h-px bg-gray-200 my-2"></div>
                   <div className="space-y-2 text-sm">
-                    <div className="flex justify-between"><span className="text-gray-500">Family Member Name</span><span className="font-semibold text-gray-900">{member.name || '--'}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-500">Employment Status</span><span className="font-semibold text-gray-900">{member.status}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">Name</span><span className="font-semibold text-gray-900">{member.name || '--'}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-500">Relationship</span><span className="font-semibold text-gray-900">{member.relationship}</span></div>
                     <div className="flex justify-between"><span className="text-gray-500">Occupation</span><span className="font-semibold text-gray-900">{member.occupation || '--'}</span></div>
                     <div className="flex justify-between"><span className="text-gray-500">Monthly Income</span><span className="font-semibold text-gray-900">{member.income || '--'}</span></div>
                   </div>
@@ -448,27 +381,23 @@ const TertiaryScholarshipForm = ({ onBack }) => {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Certificate of Indigency (Applicant)</span>
-                  <span className={files.certificateOfIndigency ? "text-[#21cf81]" : "text-gray-400"}>{files.certificateOfIndigency ? "✓" : "—"}</span>
+                  <span className={files.certificateOfIndigency ? "text-[#21cf81]" : "text-gray-400"}>{files.certificateOfIndigency ? "\u2713" : "\u2014"}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Birth Certificate (Applicant)</span>
-                  <span className={files.birthCertificate ? "text-[#21cf81]" : "text-gray-400"}>{files.birthCertificate ? "✓" : "—"}</span>
+                  <span className={files.birthCertificate ? "text-[#21cf81]" : "text-gray-400"}>{files.birthCertificate ? "\u2713" : "\u2014"}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Income Certificate (Father)</span>
-                  <span className={files.incomeCertFather ? "text-[#21cf81]" : "text-gray-400"}>{files.incomeCertFather ? "✓" : "—"}</span>
+                  <span className={files.incomeCertFather ? "text-[#21cf81]" : "text-gray-400"}>{files.incomeCertFather ? "\u2713" : "\u2014"}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Income Certificate (Mother)</span>
-                  <span className={files.incomeCertMother ? "text-[#21cf81]" : "text-gray-400"}>{files.incomeCertMother ? "✓" : "—"}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Recommendation Letter (Optional)</span>
-                  <span className={files.recommendationLetter ? "text-[#21cf81]" : "text-gray-400"}>{files.recommendationLetter ? "✓" : "—"}</span>
+                  <span className={files.incomeCertMother ? "text-[#21cf81]" : "text-gray-400"}>{files.incomeCertMother ? "\u2713" : "\u2014"}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Essay</span>
-                  <span className={files.essay ? "text-[#21cf81]" : "text-gray-400"}>{files.essay ? "✓" : "—"}</span>
+                  <span className={files.essay ? "text-[#21cf81]" : "text-gray-400"}>{files.essay ? "\u2713" : "\u2014"}</span>
                 </div>
               </div>
             </div>
@@ -478,26 +407,12 @@ const TertiaryScholarshipForm = ({ onBack }) => {
               <h3 className="text-md font-bold text-[#5b5f97] border-l-4 border-[#5b5f97] pl-2 mb-3">Declaration and Agreement</h3>
               <div className="space-y-3">
                 <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={agreedCertify}
-                    onChange={(e) => setAgreedCertify(e.target.checked)}
-                    className="mt-1 h-4 w-4 rounded border-gray-300 text-[#5b5f97] focus:ring-[#5b5f97] accent-[#5b5f97] flex-shrink-0"
-                  />
-                  <span className="text-sm text-gray-600">
-                    I certify that all information provided in this application is true and correct to the best of my knowledge. I understand that any false or misleading information may result in the denial or revocation of any scholarship granted.
-                  </span>
+                  <input type="checkbox" checked={agreedCertify} onChange={(e) => setAgreedCertify(e.target.checked)} className="mt-1 h-4 w-4 rounded border-gray-300 text-[#5b5f97] focus:ring-[#5b5f97] accent-[#5b5f97] flex-shrink-0" />
+                  <span className="text-sm text-gray-600">I certify that all information provided in this application is true and correct to the best of my knowledge. I understand that any false or misleading information may result in the denial or revocation of any scholarship granted.</span>
                 </label>
                 <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={agreedProvide}
-                    onChange={(e) => setAgreedProvide(e.target.checked)}
-                    className="mt-1 h-4 w-4 rounded border-gray-300 text-[#5b5f97] focus:ring-[#5b5f97] accent-[#5b5f97] flex-shrink-0"
-                  />
-                  <span className="text-sm text-gray-600">
-                    I agree to provide any additional documentation requested by KKFI and to comply with all scholarship terms and conditions.
-                  </span>
+                  <input type="checkbox" checked={agreedProvide} onChange={(e) => setAgreedProvide(e.target.checked)} className="mt-1 h-4 w-4 rounded border-gray-300 text-[#5b5f97] focus:ring-[#5b5f97] accent-[#5b5f97] flex-shrink-0" />
+                  <span className="text-sm text-gray-600">I agree to provide any additional documentation requested by KKFI and to comply with all scholarship terms and conditions.</span>
                 </label>
               </div>
             </div>
@@ -510,10 +425,9 @@ const TertiaryScholarshipForm = ({ onBack }) => {
             </button>
           </div>
         )}
-
       </div>
     </div>
   );
 };
 
-export default TertiaryScholarshipForm;
+export default VocationalScholarshipForm;

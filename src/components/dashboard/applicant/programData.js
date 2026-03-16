@@ -1,0 +1,32 @@
+export const PROGRAMS = [
+  {
+    slug: "tertiary",
+    title: "TERTIARY SCHOLARSHIP PROGRAM",
+    support: "Up to P30,000/year",
+    tag: "Full Academic Year",
+    requirement: "GWA: 85% and above",
+    desc: "Support for Filipino state university students to empower future leaders across the regions.",
+    image: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&q=80&w=600&h=300",
+    gradient: "linear-gradient(135deg, #4f6d7a, #25364f)",
+  },
+  {
+    slug: "employee-child",
+    title: "KKFI EMPLOYEE-CHILD EDUCATION GRANT",
+    support: "Up to P30,000/year",
+    tag: "Tuition Support",
+    requirement: "Staff and Family",
+    desc: "Educational support for regular KKFI employees, a slot for personal professional growth or a relative's studies.",
+    image: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=600&h=300",
+    gradient: "linear-gradient(135deg, #3f5871, #324158)",
+  },
+  {
+    slug: "vocational",
+    title: "VOCATIONAL AND TECHNOLOGY SCHOLARSHIP",
+    support: "Up to P65,000",
+    tag: "Skill Development",
+    requirement: "Certification",
+    desc: "Practical skills-based scholarship for Filipinos, to fast-track employment and sustainable livelihoods.",
+    image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=600&h=300",
+    gradient: "linear-gradient(135deg, #5f738d, #2e3f57)",
+  },
+];
