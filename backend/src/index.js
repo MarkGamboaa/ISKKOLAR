@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes.js';
+import scholarshipRoutes from './routes/scholarshipRoutes.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 
 dotenv.config();
@@ -20,6 +21,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/scholarships', scholarshipRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
