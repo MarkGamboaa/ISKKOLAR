@@ -15,6 +15,7 @@ const VocationalScholarshipForm = ({ onBack }) => {
     vocationalSchool: '',
     vocationalProgram: '',
     courseDuration: '6',
+    expectedGradYear: '',
     completionDate: '',
     fatherName: '',
     fatherStatus: 'Employed',
@@ -339,6 +340,7 @@ const VocationalScholarshipForm = ({ onBack }) => {
                 <div className="flex justify-between"><span className="text-gray-500">Program</span><span className="font-semibold text-gray-900">{form.vocationalProgram || '--'}</span></div>
                 <div className="flex justify-between"><span className="text-gray-500">Course Duration</span><span className="font-semibold text-gray-900">{form.courseDuration} months</span></div>
                 <div className="flex justify-between"><span className="text-gray-500">Completion Date</span><span className="font-semibold text-gray-900">{form.completionDate || '--'}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Expected Year of Graduation</span><span className="font-semibold text-gray-900">{form.expectedGradYear || '--'}</span></div>
               </div>
             </div>
 

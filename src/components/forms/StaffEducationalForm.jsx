@@ -17,6 +17,7 @@ const StaffEducationalForm = ({ onBack }) => {
     gradeScale: '1.0 - 5.00 Grading System',
     yearLevel: '1st',
     term: '1st',
+    expectedGradYear: '',
     staffId: '',
     firstName: '',
     middleName: '',
@@ -188,13 +189,19 @@ const StaffEducationalForm = ({ onBack }) => {
                 </div>
               </div>
               <div>
+                <label className="block text-sm text-gray-600 font-medium mb-1.5">Expected Year of Graduation</label>
+                <input required type="number" value={form.expectedGradYear} onChange={(e) => handleFormChange('expectedGradYear', e.target.value)} placeholder="YYYY" min="2024" max="2099" className="w-full p-3 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-[#5b5f97]" />
+              </div>
+              <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">COR</label>
                 <input required type="file" onChange={(e) => handleFileChange('cor', e.target.files[0])} className={fileInputClass} />
               </div>
+              {form.incomingFreshman === 'No' && (
               <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">Current Term Report Card</label>
                 <input required type="file" onChange={(e) => handleFileChange('currentTermReport', e.target.files[0])} className={fileInputClass} />
               </div>
+              )}
             </div>
 
             <button type="submit" className="w-full mt-6 py-4 bg-[#5b5f97] text-white rounded-xl font-semibold hover:bg-[#4a4e7d] transition flex justify-center items-center gap-2">
@@ -299,6 +306,7 @@ const StaffEducationalForm = ({ onBack }) => {
                 <div className="flex justify-between"><span className="text-gray-500">Program</span><span className="font-semibold text-gray-900">{form.program || '--'}</span></div>
                 <div className="flex justify-between"><span className="text-gray-500">Year Level</span><span className="font-semibold text-gray-900">{form.yearLevel}</span></div>
                 <div className="flex justify-between"><span className="text-gray-500">Term</span><span className="font-semibold text-gray-900">{form.term}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Expected Year of Graduation</span><span className="font-semibold text-gray-900">{form.expectedGradYear || '--'}</span></div>
               </div>
             </div>
 
