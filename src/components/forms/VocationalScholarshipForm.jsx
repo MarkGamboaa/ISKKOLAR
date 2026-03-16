@@ -174,6 +174,10 @@ const VocationalScholarshipForm = ({ onBack }) => {
                 </div>
               </div>
               <div>
+                <label className="block text-sm text-gray-600 font-medium mb-1.5">Expected Year of Graduation</label>
+                <input required type="number" value={form.expectedGradYear} onChange={(e) => handleFormChange('expectedGradYear', e.target.value)} placeholder="YYYY" min="2024" max="2099" className="w-full p-3 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-[#5b5f97]" />
+              </div>
+              <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">COR</label>
                 <input required type="file" onChange={(e) => handleFileChange('cor', e.target.files[0])} className={fileInputClass} />
               </div>
