@@ -2,6 +2,8 @@
 export const errorHandler = (err, req, res, next) => {
   console.error('Error:', err);
 
+  const uploadField = err.field || null;
+
   // Supabase auth errors
   if (err.status === 400 && err.message?.includes('already registered')) {
     return res.status(400).json({
@@ -28,8 +30,20 @@ export const errorHandler = (err, req, res, next) => {
   if (err.code === 'LIMIT_FILE_SIZE') {
     return res.status(400).json({
       success: false,
-      message: 'File size exceeds the maximum limit of 5MB',
-      errors: [{ field: 'profilePhoto', message: 'File size exceeds the maximum limit of 5MB' }]
+      message: 'File size exceeds the allowed limit',
+      errors: [{
+        field: uploadField || 'file',
+        message: `The uploaded file for ${uploadField || 'this field'} exceeds the allowed size limit.`
+      }]
+    });
+  }
+
+  if (typeof err.message === 'string' && err.message.startsWith('Invalid file type for')) {
+    const matchedField = err.message.match(/Invalid file type for\s([^:]+):/i)?.[1] || uploadField || 'file';
+    return res.status(400).json({
+      success: false,
+      message: 'File type validation failed',
+      errors: [{ field: matchedField, message: err.message }]
     });
   }
 
