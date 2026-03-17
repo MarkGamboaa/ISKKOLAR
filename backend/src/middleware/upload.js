@@ -11,11 +11,12 @@ import {
 
 const storage = multer.memoryStorage();
 
-const ALLOWED_DOC_EXTENSIONS = new Set(['.pdf', '.jpg', '.jpeg', '.png']);
+const ALLOWED_DOC_EXTENSIONS = new Set(['.pdf', '.doc', '.docx']);
 const ALLOWED_DOC_MIME_TYPES_SET = new Set([
   ...ALLOWED_DOC_MIME_TYPES,
   'application/x-pdf',
   'application/acrobat',
+  'application/vnd.ms-word',
 ]);
 
 const fileFilter = (req, file, cb) => {
@@ -46,7 +47,7 @@ const docFileFilter = (req, file, cb) => {
   if (!validByMime && !validByExt) {
     return cb(
       new Error(
-        `Invalid file type for ${file.fieldname}: received "${file.mimetype || 'unknown'}". Allowed formats are PDF (.pdf), JPEG (.jpg/.jpeg), and PNG (.png).`
+        `Invalid file type for ${file.fieldname}: Only PDF, DOC, or DOCX files are allowed.`
       )
     );
   }
