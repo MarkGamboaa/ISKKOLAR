@@ -3,8 +3,8 @@ import Joi from 'joi';
 // ─── Constants ───────────────────────────────────────────────
 export const ALLOWED_DOC_MIME_TYPES = [
   'application/pdf',
-  'image/jpeg',
-  'image/png',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ];
 export const MAX_DOC_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -23,41 +23,60 @@ export const OPTIONAL_DOCUMENT_TYPES = ['recommendation_letter'];
 
 // ─── Reusable sub-schemas ─────────────────────────────────────
 const familyMemberSchema = Joi.object({
-  role: Joi.string().valid('father', 'mother', 'other').required(),
-  full_name: Joi.string().min(2).max(255).required(),
+  role: Joi.string().valid('father', 'mother', 'other').required().messages({
+    'any.required': 'Role is required',
+    'any.only': 'Invalid role',
+  }),
+  full_name: Joi.string().trim().min(2).max(255).required().messages({
+    'string.empty': 'Name is required',
+    'string.min': 'Name is too short',
+    'any.required': 'Name is required',
+  }),
   employment_status: Joi.string()
     .valid('Employed', 'Unemployed', 'Self-Employed')
-    .required(),
-  occupation: Joi.string().max(255).allow('', null),
-  monthly_income: Joi.number().min(0).allow(null),
+    .required()
+    .messages({
+      'any.only': 'Invalid employment status',
+      'any.required': 'Employment status is required',
+    }),
+  occupation: Joi.when('employment_status', {
+    is: Joi.valid('Employed', 'Self-Employed'),
+    then: Joi.string().trim().min(2).max(255).required().messages({
+      'string.base': 'Occupation is required',
+      'string.min': 'Occupation is too short',
+      'string.max': 'Occupation is too long',
+      'any.required': 'Occupation is required',
+    })
+  }),
+  monthly_income: Joi.when('employment_status', {
+    is: Joi.valid('Employed', 'Self-Employed'),
+    then: Joi.number().min(0).required().messages({
+      'number.base': 'Monthly income is required',
+      'number.min': 'Monthly income cannot be negative',
+    }),
+    otherwise: Joi.number().min(0).allow('', null),
+  }),
 });
 
 // ─── Step 1: Academic Information ────────────────────────────
 export const tertiaryStep1Validation = Joi.object({
   // Scholarship info
   scholarship_type: Joi.string()
-    .valid('Manila Scholars', 'Bulacan Scholars', 'Nationwide Scholars')
-    .required()
     .messages({ 'any.only': 'Invalid scholarship type' }),
 
-  fund_type: Joi.string()
-    .valid('KKFI Funded', 'Partner Funded')
-    .required()
-    .messages({ 'any.only': 'Invalid fund type' }),
-
-  incoming_freshman: Joi.boolean().required().messages({
-    'any.required': 'Please specify if you are an incoming freshman',
-  }),
+    incoming_freshman: Joi.boolean().required().messages({
+      'boolean.base': 'Incoming freshman field must be true or false',
+      'any.required': 'Incoming freshman field is required',
+    }),
 
   // Secondary education
   secondary_school: Joi.string().min(2).max(255).required().messages({
     'string.empty': 'Secondary school name is required',
   }),
   strand: Joi.string()
-    .valid('STEM', 'ABM', 'HUMSS', 'GAS', 'TVL')
     .required()
     .messages({ 'any.only': 'Invalid strand' }),
-  year_graduated: Joi.number()
+    year_graduated: Joi.number()
     .integer()
     .min(1950)
     .max(new Date().getFullYear())
@@ -72,22 +91,23 @@ export const tertiaryStep1Validation = Joi.object({
     'string.empty': 'Program is required',
   }),
   term_type: Joi.string()
-    .valid('Semester', 'Trimester', 'Quarter System')
     .required(),
   grade_scale: Joi.string()
-    .valid(
-      '1.0 - 5.00 Grading System',
-      '4.00 GPA System',
-      'Percentage System',
-      'Letter Grade System'
-    )
     .required(),
   year_level: Joi.string()
-    .valid('1st', '2nd', '3rd', '4th')
     .required(),
   term: Joi.string()
-    .valid('1st', '2nd', '3rd', '4th')
     .required(),
+  expected_graduation_year: Joi.number()
+    .integer()
+    .min(new Date().getFullYear())
+    .max(new Date().getFullYear() + 10)
+    .required()
+    .messages({
+      'number.base': 'Expected graduation year is required',
+      'number.min': `Expected graduation year must be ${new Date().getFullYear()} or later`,
+      'number.max': 'Expected graduation year seems too far in the future',
+    }),
 }).custom((value, helpers) => {
   // cross-field: term options depend on term_type
   const validTerms = {
@@ -112,21 +132,24 @@ export const tertiaryStep2Validation = Joi.object({
     .custom((members, helpers) => {
       const roles = members.map((m) => m.role);
       if (!roles.includes('father'))
-        return helpers.error('any.invalid', {
-          message: "Father's information is required",
+        return helpers.error('any.custom', {
+          custom: 'Father info is required',
         });
       if (!roles.includes('mother'))
-        return helpers.error('any.invalid', {
-          message: "Mother's information is required",
+        return helpers.error('any.custom', {
+          custom: 'Mother info is required',
         });
       return members;
     })
     .messages({
-      'array.min': 'At least father and mother information is required',
+      'array.base': 'Family info is required',
+      'array.min': 'Add at least father and mother',
+      'any.required': 'Family info is required',
+      'any.custom': '{{#custom}}',
     }),
 });
 
-// ─── Step 3: handled in controller (file validation) ─────────
+// ─── Step 3: handled in middleware (file validation) ─────────
 
 // ─── Full submission: Step 1 + Step 2 combined ────────────────
 export const tertiarySubmitValidation = tertiaryStep1Validation.concat(
