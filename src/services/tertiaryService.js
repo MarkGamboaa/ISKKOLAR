@@ -35,7 +35,7 @@ export const validateTertiaryStep = async (step, payload, files = {}) => {
     const formData = new FormData();
     appendPayload(formData, payload);
 
-    if (step === 3) {
+    if (step === 1 || step === 3) {
       appendFiles(formData, files);
     }
 

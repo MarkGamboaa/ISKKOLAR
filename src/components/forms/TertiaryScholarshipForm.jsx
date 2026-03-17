@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
+import {
+  validateTertiaryStep,
+  submitTertiaryApplication,
+} from '../../services/tertiaryService';
 
 const TertiaryScholarshipForm = ({ onBack }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [termType, setTermType] = useState('Semester');
   const fileInputClass = "block w-full text-sm text-gray-500 file:cursor-pointer file:mr-4 file:py-3 file:px-4 file:border-0 file:border-r file:border-gray-200 file:text-sm file:font-semibold file:bg-gray-50 file:text-[#5b5f97] hover:file:bg-gray-100 border border-gray-200 rounded-lg focus:outline-none cursor-pointer bg-white";
+  const documentFileAccept = '.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
   const totalSteps = 4;
   const [additionalMembers, setAdditionalMembers] = useState([]);
 
   const [form, setForm] = useState({
     scholarshipType: 'Manila Scholars',
-    fundType: 'KKFI Funded',
     incomingFreshman: 'No',
     secondarySchool: '',
     strand: 'STEM',
@@ -44,19 +48,223 @@ const TertiaryScholarshipForm = ({ onBack }) => {
 
   const [agreedCertify, setAgreedCertify] = useState(false);
   const [agreedProvide, setAgreedProvide] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [serverMessage, setServerMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  // Convert server errors array → { fieldKey: message } map
+  const normalizeErrors = (error) => {
+    const map = {};
+    if (Array.isArray(error?.errors) && error.errors.length > 0) {
+      error.errors.forEach(({ field, message }) => {
+        if (!field) { map['_general'] = message; return; }
+        // family_members.0.full_name → father_full_name, mother_full_name, additional_N_full_name
+        const normalizedField = field.replace(/\[(\d+)\]/g, '.$1');
+        const familyMatch = normalizedField.match(/^family_members\.(\d+)\.(.+)$/);
+        if (familyMatch) {
+          const idx = parseInt(familyMatch[1], 10);
+          const sub = familyMatch[2];
+          const prefix = idx === 0 ? 'father' : idx === 1 ? 'mother' : `additional_${idx - 2}`;
+          map[`${prefix}_${sub}`] = message;
+        } else {
+          map[normalizedField] = message;
+        }
+      });
+    }
+    if (Object.keys(map).length === 0) {
+      map['_general'] = error?.message || 'Request failed. Please try again.';
+    }
+    return map;
+  };
+
+  // Renders a small red error message under a field
+  const FieldError = ({ name }) => {
+    const msg = fieldErrors[name];
+    return msg ? <p className="mt-1 text-xs text-red-500">{msg}</p> : null;
+  };
+
+  // Returns border classes — red if the field has an error
+  const inputBorder = (field) =>
+    fieldErrors[field]
+      ? 'border-red-400 focus:border-red-500'
+      : 'border-gray-200 focus:border-[#5b5f97]';
+
+  const toNumberOrNull = (value) => {
+    if (value === '' || value === null || value === undefined) return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+
+  const buildFamilyMembers = () => {
+    const members = [
+      {
+        role: 'father',
+        full_name: form.fatherName,
+        employment_status: form.fatherStatus,
+        occupation: form.fatherOccupation || null,
+        monthly_income: toNumberOrNull(form.fatherIncome),
+      },
+      {
+        role: 'mother',
+        full_name: form.motherName,
+        employment_status: form.motherStatus,
+        occupation: form.motherOccupation || null,
+        monthly_income: toNumberOrNull(form.motherIncome),
+      },
+      ...additionalMembers.map((member) => ({
+        role: 'other',
+        full_name: member.name,
+        employment_status: member.status,
+        occupation: member.occupation || null,
+        monthly_income: toNumberOrNull(member.income),
+      })),
+    ];
+
+    return members;
+  };
+
+  const buildStep1Payload = () => ({
+    scholarship_type: form.scholarshipType,
+    incoming_freshman: form.incomingFreshman === 'Yes',
+    secondary_school: form.secondarySchool,
+    strand: form.strand,
+    year_graduated: form.yearGraduated,
+    tertiary_school: form.tertiarySchool,
+    program: form.program,
+    term_type: form.termType || termType,
+    grade_scale: form.gradeScale,
+    year_level: form.yearLevel,
+    term: form.term,
+    expected_graduation_year: form.expectedGradYear,
+  });
+
+  const buildStep2Payload = () => ({
+    family_members: buildFamilyMembers(),
+  });
+
+  const buildStep3Payload = () => ({
+    incoming_freshman: form.incomingFreshman === 'Yes',
+  });
+
+  const buildStep1FilesPayload = () => ({
+    grade_report: files.gradeReport,
+    cor: files.cor,
+    current_term_report: files.currentTermReport,
+  });
+
+  const buildSubmitPayload = () => ({
+    ...buildStep1Payload(),
+    ...buildStep2Payload(),
+  });
+
+  const buildFilesPayload = () => ({
+    grade_report: files.gradeReport,
+    cor: files.cor,
+    current_term_report: files.currentTermReport,
+    certificate_of_indigency: files.certificateOfIndigency,
+    birth_certificate: files.birthCertificate,
+    income_cert_father: files.incomeCertFather,
+    income_cert_mother: files.incomeCertMother,
+    recommendation_letter: files.recommendationLetter,
+    essay: files.essay,
+  });
+
+  const formErrorFieldMap = {
+    scholarshipType: 'scholarship_type',
+    incomingFreshman: 'incoming_freshman',
+    secondarySchool: 'secondary_school',
+    strand: 'strand',
+    yearGraduated: 'year_graduated',
+    tertiarySchool: 'tertiary_school',
+    program: 'program',
+    termType: 'term_type',
+    gradeScale: 'grade_scale',
+    yearLevel: 'year_level',
+    term: 'term',
+    expectedGradYear: 'expected_graduation_year',
+    fatherName: 'father_full_name',
+    fatherStatus: 'father_employment_status',
+    fatherOccupation: 'father_occupation',
+    fatherIncome: 'father_monthly_income',
+    motherName: 'mother_full_name',
+    motherStatus: 'mother_employment_status',
+    motherOccupation: 'mother_occupation',
+    motherIncome: 'mother_monthly_income',
+  };
+
+  const fileErrorFieldMap = {
+    gradeReport: 'grade_report',
+    cor: 'cor',
+    currentTermReport: 'current_term_report',
+    certificateOfIndigency: 'certificate_of_indigency',
+    birthCertificate: 'birth_certificate',
+    incomeCertFather: 'income_cert_father',
+    incomeCertMother: 'income_cert_mother',
+    recommendationLetter: 'recommendation_letter',
+    essay: 'essay',
+  };
+
+  const clearFieldErrors = (...keys) => {
+    setFieldErrors((prev) => {
+      const next = { ...prev };
+      keys.forEach((key) => {
+        if (key && next[key]) delete next[key];
+      });
+      return next;
+    });
+  };
 
   const handleFormChange = (field, value) => {
     setForm(prev => ({ ...prev, [field]: value }));
     if (field === 'termType') setTermType(value);
+    clearFieldErrors(
+      formErrorFieldMap[field],
+      field === 'fatherOccupation' ? 'family_members.0.occupation' : null,
+      field === 'fatherIncome' ? 'family_members.0.monthly_income' : null,
+      field === 'motherOccupation' ? 'family_members.1.occupation' : null,
+      field === 'motherIncome' ? 'family_members.1.monthly_income' : null
+    );
+
+    if (field === 'incomingFreshman' && value === 'Yes') {
+      clearFieldErrors('current_term_report');
+    }
   };
 
   const handleFileChange = (field, file) => {
     setFiles(prev => ({ ...prev, [field]: file }));
+    if (file) clearFieldErrors(fileErrorFieldMap[field]);
   };
 
-  const handleNext = (e) => {
+  const handleNext = async (e) => {
     e.preventDefault();
-    setCurrentStep(prev => prev + 1);
+    setFieldErrors({});
+    setServerMessage('');
+    try {
+      if (currentStep === 1) await validateTertiaryStep(1, buildStep1Payload(), buildStep1FilesPayload());
+      else if (currentStep === 2) await validateTertiaryStep(2, buildStep2Payload());
+      else if (currentStep === 3) await validateTertiaryStep(3, buildStep3Payload(), buildFilesPayload());
+      setCurrentStep((prev) => prev + 1);
+    } catch (error) {
+      setFieldErrors(normalizeErrors(error));
+    }
+  };
+
+  const handleSubmitApplication = async () => {
+    setIsSubmitting(true);
+    setFieldErrors({});
+    setServerMessage('');
+    setSubmitSuccess(false);
+    try {
+      const response = await submitTertiaryApplication(buildSubmitPayload(), buildFilesPayload());
+      setSubmitSuccess(true);
+      setServerMessage(response?.message || 'Application submitted successfully.');
+    } catch (error) {
+      setFieldErrors(normalizeErrors(error));
+      setServerMessage(error?.message || 'Submission failed.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const addFamilyMember = () => setAdditionalMembers([...additionalMembers, { name: '', status: 'Employed', occupation: '', income: '' }]);
@@ -66,6 +274,17 @@ const TertiaryScholarshipForm = ({ onBack }) => {
     const updated = [...additionalMembers];
     updated[index][field] = value;
     setAdditionalMembers(updated);
+
+    const errorKeyMap = {
+      name: 'full_name',
+      status: 'employment_status',
+      occupation: 'occupation',
+      income: 'monthly_income',
+    };
+    clearFieldErrors(
+      `additional_${index}_${errorKeyMap[field]}`,
+      `family_members.${index + 2}.${errorKeyMap[field]}`
+    );
   };
 
   const steps = [
@@ -104,32 +323,34 @@ const TertiaryScholarshipForm = ({ onBack }) => {
       </div>
 
       <div className="px-8 pb-8">
+        {(submitSuccess || fieldErrors['_general'] || (serverMessage && Object.keys(fieldErrors).filter(k => k !== '_general').length === 0)) && (
+          <div className={`mb-6 rounded-lg border p-3 text-sm ${submitSuccess ? 'border-green-200 bg-green-50 text-green-700' : 'border-red-200 bg-red-50 text-red-700'}`}>
+            {serverMessage && <p className="font-semibold">{serverMessage}</p>}
+            {fieldErrors['_general'] && <p className="mt-1">{fieldErrors['_general']}</p>}
+          </div>
+        )}
+
         {/* Step 1: Academic Information */}
         {currentStep === 1 && (
-          <form onSubmit={handleNext} className="space-y-6">
+          <form onSubmit={handleNext} noValidate className="space-y-6">
             <h3 className="text-lg font-bold text-[#5b5f97] border-l-4 border-[#5b5f97] pl-3 mb-4">Academic Information</h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">Scholarship type</label>
-                <select required value={form.scholarshipType} onChange={(e) => handleFormChange('scholarshipType', e.target.value)} className="w-full p-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-[#5b5f97]">
+                <select value={form.scholarshipType} onChange={(e) => handleFormChange('scholarshipType', e.target.value)} className={`w-full p-3 bg-white border rounded-lg text-sm text-gray-700 focus:outline-none ${inputBorder('scholarship_type')}`}>
                   <option>Manila Scholars</option>
                   <option>Bulacan Scholars</option>
                   <option>Nationwide Scholars</option>
                 </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 font-medium mb-1.5">Scholarship Fund type</label>
-                <select required value={form.fundType} onChange={(e) => handleFormChange('fundType', e.target.value)} className="w-full p-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-[#5b5f97]">
-                  <option>KKFI Funded</option>
-                  <option>Partner Funded</option>
-                </select>
+                <FieldError name="scholarship_type" />
               </div>
               <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">Incoming Freshman?</label>
-                <select required value={form.incomingFreshman} onChange={(e) => handleFormChange('incomingFreshman', e.target.value)} className="w-full p-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-[#5b5f97]">
+                <select value={form.incomingFreshman} onChange={(e) => handleFormChange('incomingFreshman', e.target.value)} className={`w-full p-3 bg-white border rounded-lg text-sm text-gray-700 focus:outline-none ${inputBorder('incoming_freshman')}`}>
                   <option>No</option>
                   <option>Yes</option>
                 </select>
+                <FieldError name="incoming_freshman" />
               </div>
             </div>
 
@@ -137,27 +358,31 @@ const TertiaryScholarshipForm = ({ onBack }) => {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">School Name</label>
-                <input required type="text" value={form.secondarySchool} onChange={(e) => handleFormChange('secondarySchool', e.target.value)} placeholder="Enter School Name" className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5b5f97]" />
+                <input type="text" value={form.secondarySchool} onChange={(e) => handleFormChange('secondarySchool', e.target.value)} placeholder="Enter School Name" className={`w-full p-3 border rounded-lg text-sm focus:outline-none ${inputBorder('secondary_school')}`} />
+                <FieldError name="secondary_school" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-gray-600 font-medium mb-1.5">Strand</label>
-                  <select required value={form.strand} onChange={(e) => handleFormChange('strand', e.target.value)} className="w-full p-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-[#5b5f97]">
+                  <select value={form.strand} onChange={(e) => handleFormChange('strand', e.target.value)} className={`w-full p-3 bg-white border rounded-lg text-sm text-gray-700 focus:outline-none ${inputBorder('strand')}`}>
                     <option>STEM</option>
                     <option>ABM</option>
                     <option>HUMSS</option>
                     <option>GAS</option>
                     <option>TVL</option>
                   </select>
+                  <FieldError name="strand" />
                 </div>
                 <div>
                   <label className="block text-sm text-gray-600 font-medium mb-1.5">Year Graduated</label>
-                  <input required type="number" value={form.yearGraduated} onChange={(e) => handleFormChange('yearGraduated', e.target.value)} placeholder="YYYY" min="1950" max="2099" className="w-full p-3 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-[#5b5f97]" />
+                  <input type="number" value={form.yearGraduated} onChange={(e) => handleFormChange('yearGraduated', e.target.value)} placeholder="YYYY" min="1950" max="2099" className={`w-full p-3 border rounded-lg text-sm text-gray-700 focus:outline-none ${inputBorder('year_graduated')}`} />
+                  <FieldError name="year_graduated" />
                 </div>
               </div>
               <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">Grade Report</label>
-                <input required type="file" onChange={(e) => handleFileChange('gradeReport', e.target.files[0])} className={fileInputClass} />
+                <input type="file" accept={documentFileAccept} onChange={(e) => handleFileChange('gradeReport', e.target.files[0])} className={fileInputClass} />
+                <FieldError name="grade_report" />
               </div>
             </div>
 
@@ -165,65 +390,74 @@ const TertiaryScholarshipForm = ({ onBack }) => {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">University / College Name</label>
-                <input required type="text" value={form.tertiarySchool} onChange={(e) => handleFormChange('tertiarySchool', e.target.value)} placeholder="Enter School Name" className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5b5f97]" />
+                <input type="text" value={form.tertiarySchool} onChange={(e) => handleFormChange('tertiarySchool', e.target.value)} placeholder="Enter School Name" className={`w-full p-3 border rounded-lg text-sm focus:outline-none ${inputBorder('tertiary_school')}`} />
+                <FieldError name="tertiary_school" />
               </div>
               <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">Program</label>
-                <input required type="text" value={form.program} onChange={(e) => handleFormChange('program', e.target.value)} placeholder="Enter Program" className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5b5f97]" />
+                <input type="text" value={form.program} onChange={(e) => handleFormChange('program', e.target.value)} placeholder="Enter Program" className={`w-full p-3 border rounded-lg text-sm focus:outline-none ${inputBorder('program')}`} />
+                <FieldError name="program" />
               </div>
               <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">Term Type</label>
-                <select required
+                <select
                   value={termType}
                   onChange={(e) => { setTermType(e.target.value); handleFormChange('termType', e.target.value); }}
-                  className="w-full p-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-[#5b5f97]"
+                  className={`w-full p-3 bg-white border rounded-lg text-sm text-gray-700 focus:outline-none ${inputBorder('term_type')}`}
                 >
                   <option>Semester</option>
                   <option>Trimester</option>
                   <option>Quarter System</option>
                 </select>
+                <FieldError name="term_type" />
               </div>
               <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">Grade Scale</label>
-                <select required value={form.gradeScale} onChange={(e) => handleFormChange('gradeScale', e.target.value)} className="w-full p-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-[#5b5f97]">
+                <select value={form.gradeScale} onChange={(e) => handleFormChange('gradeScale', e.target.value)} className={`w-full p-3 bg-white border rounded-lg text-sm text-gray-700 focus:outline-none ${inputBorder('grade_scale')}`}>
                   <option>1.0 - 5.00 Grading System</option>
                   <option>4.00 GPA System</option>
                   <option>Percentage System</option>
                   <option>Letter Grade System</option>
                 </select>
+                <FieldError name="grade_scale" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-gray-600 font-medium mb-1.5">Year Level</label>
-                  <select required value={form.yearLevel} onChange={(e) => handleFormChange('yearLevel', e.target.value)} className="w-full p-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-[#5b5f97]">
+                  <select value={form.yearLevel} onChange={(e) => handleFormChange('yearLevel', e.target.value)} className={`w-full p-3 bg-white border rounded-lg text-sm text-gray-700 focus:outline-none ${inputBorder('year_level')}`}>
                     <option>1st</option>
                     <option>2nd</option>
                     <option>3rd</option>
                     <option>4th</option>
                   </select>
+                  <FieldError name="year_level" />
                 </div>
                 <div>
                   <label className="block text-sm text-gray-600 font-medium mb-1.5">Term</label>
-                  <select required value={form.term} onChange={(e) => handleFormChange('term', e.target.value)} className="w-full p-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-[#5b5f97]">
+                  <select value={form.term} onChange={(e) => handleFormChange('term', e.target.value)} className={`w-full p-3 bg-white border rounded-lg text-sm text-gray-700 focus:outline-none ${inputBorder('term')}`}>
                     <option>1st</option>
                     <option>2nd</option>
                     {(termType === 'Trimester' || termType === 'Quarter System') && <option>3rd</option>}
                     {termType === 'Quarter System' && <option>4th</option>}
                   </select>
+                  <FieldError name="term" />
                 </div>
               </div>
               <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">Expected Year of Graduation</label>
-                <input required type="number" value={form.expectedGradYear} onChange={(e) => handleFormChange('expectedGradYear', e.target.value)} placeholder="YYYY" min="2024" max="2099" className="w-full p-3 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-[#5b5f97]" />
+                <input type="number" value={form.expectedGradYear} onChange={(e) => handleFormChange('expectedGradYear', e.target.value)} placeholder="YYYY" min="2026" max="2036" className={`w-full p-3 border rounded-lg text-sm text-gray-700 focus:outline-none ${inputBorder('expected_graduation_year')}`} />
+                <FieldError name="expected_graduation_year" />
               </div>
               <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">COR</label>
-                <input required type="file" onChange={(e) => handleFileChange('cor', e.target.files[0])} className={fileInputClass} />
+                <input type="file" accept={documentFileAccept} onChange={(e) => handleFileChange('cor', e.target.files[0])} className={fileInputClass} />
+                <FieldError name="cor" />
               </div>
               {form.incomingFreshman === 'No' && (
               <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">Current Term Report Card</label>
-                <input required type="file" onChange={(e) => handleFileChange('currentTermReport', e.target.files[0])} className={fileInputClass} />
+                <input type="file" accept={documentFileAccept} onChange={(e) => handleFileChange('currentTermReport', e.target.files[0])} className={fileInputClass} />
+                <FieldError name="current_term_report" />
               </div>
               )}
             </div>
@@ -242,53 +476,62 @@ const TertiaryScholarshipForm = ({ onBack }) => {
 
         {/* Step 2: Family Information */}
         {currentStep === 2 && (
-          <form onSubmit={handleNext} className="space-y-6">
+          <form onSubmit={handleNext} noValidate className="space-y-6">
+            {fieldErrors['family_members'] && (
+              <p className="text-xs text-red-500">{fieldErrors['family_members']}</p>
+            )}
             <h3 className="text-lg font-bold text-[#5b5f97] border-l-4 border-[#5b5f97] pl-3 mb-4">Father's Information</h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">Father's Name</label>
-                <input required type="text" value={form.fatherName} onChange={(e) => handleFormChange('fatherName', e.target.value)} placeholder="Enter Father's Name" className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5b5f97]" />
+                <input type="text" value={form.fatherName} onChange={(e) => handleFormChange('fatherName', e.target.value)} placeholder="Enter Father's Name" className={`w-full p-3 border rounded-lg text-sm focus:outline-none ${inputBorder('father_full_name')}`} />
+                <FieldError name="father_full_name" />
               </div>
               <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">Employment Status</label>
-                <select required value={form.fatherStatus} onChange={(e) => handleFormChange('fatherStatus', e.target.value)} className="w-full p-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-[#5b5f97]">
+                <select value={form.fatherStatus} onChange={(e) => handleFormChange('fatherStatus', e.target.value)} className={`w-full p-3 bg-white border rounded-lg text-sm text-gray-700 focus:outline-none ${inputBorder('father_employment_status')}`}>
                   <option>Employed</option>
                   <option>Unemployed</option>
                   <option>Self-Employed</option>
                 </select>
+                <FieldError name="father_employment_status" />
               </div>
               <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">Occupation</label>
-                <input required type="text" value={form.fatherOccupation} onChange={(e) => handleFormChange('fatherOccupation', e.target.value)} placeholder="Enter Occupation" className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5b5f97]" />
+                <input type="text" value={form.fatherOccupation} onChange={(e) => handleFormChange('fatherOccupation', e.target.value)} placeholder="Enter Occupation" className={`w-full p-3 border rounded-lg text-sm focus:outline-none ${inputBorder('father_occupation')}`} />
+                <FieldError name="father_occupation" />
               </div>
               <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">Monthly Income</label>
-                <input required type="text" value={form.fatherIncome} onChange={(e) => handleFormChange('fatherIncome', e.target.value)} placeholder="Enter Monthly Income" className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5b5f97]" />
+                <input type="text" value={form.fatherIncome} onChange={(e) => handleFormChange('fatherIncome', e.target.value)} placeholder="Enter Monthly Income" className={`w-full p-3 border rounded-lg text-sm focus:outline-none ${inputBorder('father_monthly_income')}`} />
+                <FieldError name="father_monthly_income" />
               </div>
-
-
             </div>
             <h3 className="text-lg font-bold text-[#5b5f97] border-l-4 border-[#5b5f97] pl-3 mb-4">Mother's Information</h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">Mother's Name</label>
-                <input required type="text" value={form.motherName} onChange={(e) => handleFormChange('motherName', e.target.value)} placeholder="Enter Mother's Name" className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5b5f97]" />
+                <input type="text" value={form.motherName} onChange={(e) => handleFormChange('motherName', e.target.value)} placeholder="Enter Mother's Name" className={`w-full p-3 border rounded-lg text-sm focus:outline-none ${inputBorder('mother_full_name')}`} />
+                <FieldError name="mother_full_name" />
               </div>
               <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">Employment Status</label>
-                <select required value={form.motherStatus} onChange={(e) => handleFormChange('motherStatus', e.target.value)} className="w-full p-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-[#5b5f97]">
+                <select value={form.motherStatus} onChange={(e) => handleFormChange('motherStatus', e.target.value)} className={`w-full p-3 bg-white border rounded-lg text-sm text-gray-700 focus:outline-none ${inputBorder('mother_employment_status')}`}>
                   <option>Employed</option>
                   <option>Unemployed</option>
                   <option>Self-Employed</option>
                 </select>
+                <FieldError name="mother_employment_status" />
               </div>
               <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">Occupation</label>
-                <input required type="text" value={form.motherOccupation} onChange={(e) => handleFormChange('motherOccupation', e.target.value)} placeholder="Enter Occupation" className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5b5f97]" />
+                <input type="text" value={form.motherOccupation} onChange={(e) => handleFormChange('motherOccupation', e.target.value)} placeholder="Enter Occupation" className={`w-full p-3 border rounded-lg text-sm focus:outline-none ${inputBorder('mother_occupation')}`} />
+                <FieldError name="mother_occupation" />
               </div>
               <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">Monthly Income</label>
-                <input required type="text" value={form.motherIncome} onChange={(e) => handleFormChange('motherIncome', e.target.value)} placeholder="Enter Monthly Income" className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5b5f97]" />
+                <input type="text" value={form.motherIncome} onChange={(e) => handleFormChange('motherIncome', e.target.value)} placeholder="Enter Monthly Income" className={`w-full p-3 border rounded-lg text-sm focus:outline-none ${inputBorder('mother_monthly_income')}`} />
+                <FieldError name="mother_monthly_income" />
               </div>
             </div>
 
@@ -298,20 +541,24 @@ const TertiaryScholarshipForm = ({ onBack }) => {
                   Remove
                 </button>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5 mt-4">Family Member Name</label>
-                <input required type="text" value={member.name} onChange={(e) => updateFamilyMember(index, 'name', e.target.value)} placeholder="Enter Name" className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5b5f97] mb-4" />
+                <input type="text" value={member.name} onChange={(e) => updateFamilyMember(index, 'name', e.target.value)} placeholder="Enter Name" className={`w-full p-3 border rounded-lg text-sm focus:outline-none mb-1 ${inputBorder(`additional_${index}_full_name`)}`} />
+                <FieldError name={`additional_${index}_full_name`} />
 
-                <label className="block text-sm text-gray-600 font-medium mb-1.5">Employment Status</label>
-                <select required value={member.status} onChange={(e) => updateFamilyMember(index, 'status', e.target.value)} className="w-full p-3 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:border-[#5b5f97] mb-4">
+                <label className="block text-sm text-gray-600 font-medium mb-1.5 mt-3">Employment Status</label>
+                <select value={member.status} onChange={(e) => updateFamilyMember(index, 'status', e.target.value)} className={`w-full p-3 bg-white border rounded-lg text-sm text-gray-700 focus:outline-none mb-1 ${inputBorder(`additional_${index}_employment_status`)}`}>
                   <option>Employed</option>
                   <option>Unemployed</option>
                   <option>Self-Employed</option>
                 </select>
+                <FieldError name={`additional_${index}_employment_status`} />
 
-                <label className="block text-sm text-gray-600 font-medium mb-1.5">Occupation</label>
-                <input required type="text" value={member.occupation} onChange={(e) => updateFamilyMember(index, 'occupation', e.target.value)} placeholder="Enter Occupation" className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5b5f97] mb-4" />
+                <label className="block text-sm text-gray-600 font-medium mb-1.5 mt-3">Occupation</label>
+                <input type="text" value={member.occupation} onChange={(e) => updateFamilyMember(index, 'occupation', e.target.value)} placeholder="Enter Occupation" className={`w-full p-3 border rounded-lg text-sm focus:outline-none mb-1 ${inputBorder(`additional_${index}_occupation`)}`} />
+                <FieldError name={`additional_${index}_occupation`} />
 
-                <label className="block text-sm text-gray-600 font-medium mb-1.5">Monthly Income</label>
-                <input required type="text" value={member.income} onChange={(e) => updateFamilyMember(index, 'income', e.target.value)} placeholder="Enter Monthly Income" className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#5b5f97]" />
+                <label className="block text-sm text-gray-600 font-medium mb-1.5 mt-3">Monthly Income</label>
+                <input type="text" value={member.income} onChange={(e) => updateFamilyMember(index, 'income', e.target.value)} placeholder="Enter Monthly Income" className={`w-full p-3 border rounded-lg text-sm focus:outline-none ${inputBorder(`additional_${index}_monthly_income`)}`} />
+                <FieldError name={`additional_${index}_monthly_income`} />
               </div>
             ))}
 
@@ -339,32 +586,37 @@ const TertiaryScholarshipForm = ({ onBack }) => {
 
         {/* Step 3: Supporting Documents */}
         {currentStep === 3 && (
-          <form onSubmit={handleNext} className="space-y-6">
+          <form onSubmit={handleNext} noValidate className="space-y-6">
             <h3 className="text-lg font-bold text-[#5b5f97] border-l-4 border-[#5b5f97] pl-3 mb-4">Supporting Documents</h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">Certificate of Indigency Form (Applicant)</label>
-                <input required type="file" onChange={(e) => handleFileChange('certificateOfIndigency', e.target.files[0])} className={fileInputClass} />
+                <input type="file" accept={documentFileAccept} onChange={(e) => handleFileChange('certificateOfIndigency', e.target.files[0])} className={fileInputClass} />
+                <FieldError name="certificate_of_indigency" />
               </div>
               <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">Birth Certificate (Applicant)</label>
-                <input required type="file" onChange={(e) => handleFileChange('birthCertificate', e.target.files[0])} className={fileInputClass} />
+                <input type="file" accept={documentFileAccept} onChange={(e) => handleFileChange('birthCertificate', e.target.files[0])} className={fileInputClass} />
+                <FieldError name="birth_certificate" />
               </div>
               <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">Income Certificate (Father)</label>
-                <input required type="file" onChange={(e) => handleFileChange('incomeCertFather', e.target.files[0])} className={fileInputClass} />
+                <input type="file" accept={documentFileAccept} onChange={(e) => handleFileChange('incomeCertFather', e.target.files[0])} className={fileInputClass} />
+                <FieldError name="income_cert_father" />
               </div>
               <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">Income Certificate (Mother)</label>
-                <input required type="file" onChange={(e) => handleFileChange('incomeCertMother', e.target.files[0])} className={fileInputClass} />
+                <input type="file" accept={documentFileAccept} onChange={(e) => handleFileChange('incomeCertMother', e.target.files[0])} className={fileInputClass} />
+                <FieldError name="income_cert_mother" />
               </div>
               <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">Recommendation Letter Form (Optional)</label>
-                <input type="file" onChange={(e) => handleFileChange('recommendationLetter', e.target.files[0])} className={fileInputClass} />
+                <input type="file" accept={documentFileAccept} onChange={(e) => handleFileChange('recommendationLetter', e.target.files[0])} className={fileInputClass} />
               </div>
               <div>
                 <label className="block text-sm text-gray-600 font-medium mb-1.5">Essay</label>
-                <input required type="file" onChange={(e) => handleFileChange('essay', e.target.files[0])} className={fileInputClass} />
+                <input type="file" accept={documentFileAccept} onChange={(e) => handleFileChange('essay', e.target.files[0])} className={fileInputClass} />
+                <FieldError name="essay" />
               </div>
             </div>
 
@@ -388,7 +640,6 @@ const TertiaryScholarshipForm = ({ onBack }) => {
               <h3 className="text-md font-bold text-[#5b5f97] border-l-4 border-[#5b5f97] pl-2 mb-3">Scholarship Information</h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between"><span className="text-gray-500">Scholarship type</span><span className="font-semibold text-gray-900">{form.scholarshipType}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Scholarship Fund type</span><span className="font-semibold text-gray-900">{form.fundType}</span></div>
                 <div className="flex justify-between"><span className="text-gray-500">Incoming Freshman?</span><span className="font-semibold text-gray-900">{form.incomingFreshman}</span></div>
               </div>
             </div>
@@ -503,10 +754,12 @@ const TertiaryScholarshipForm = ({ onBack }) => {
             </div>
 
             <button
-              disabled={!agreedCertify || !agreedProvide}
-              className={`w-full mt-6 py-4 rounded-xl font-semibold transition ${agreedCertify && agreedProvide ? 'bg-[#5b5f97] text-white hover:bg-[#4a4e7d]' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
+              type="button"
+              onClick={handleSubmitApplication}
+              disabled={isSubmitting}
+              className={`w-full mt-6 py-4 rounded-xl font-semibold transition ${isSubmitting ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[#5b5f97] text-white hover:bg-[#4a4e7d]'}`}
             >
-              Submit Application
+              {isSubmitting ? 'Submitting...' : 'Submit Application'}
             </button>
           </div>
         )}
