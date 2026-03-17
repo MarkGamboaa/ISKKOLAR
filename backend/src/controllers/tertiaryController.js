@@ -3,23 +3,7 @@ import { uploadDocument } from '../services/storageServices.js';
 import {
   REQUIRED_DOCUMENT_TYPES,
   OPTIONAL_DOCUMENT_TYPES,
-  TERTIARY_STEP_VALIDATORS,
 } from '../validation/scholarshipValidation.js';
-
-const parseIncomingFreshman = (value) => {
-  if (typeof value === 'boolean') return value;
-  return value === 'true';
-};
-
-// ─── Helper: validate required docs ─────────────────────────
-const validateRequiredDocs = (uploadedFiles, incomingFreshman) => {
-  // current_term_report not required for incoming freshmen
-  const required = incomingFreshman
-    ? REQUIRED_DOCUMENT_TYPES.filter((d) => d !== 'current_term_report')
-    : REQUIRED_DOCUMENT_TYPES;
-
-  return required.filter((type) => !uploadedFiles[type]);
-};
 
 // ─── Helper: upload all docs and build insert rows ───────────
 const uploadAllDocuments = async (uploadedFiles, applicationId) => {
@@ -51,62 +35,7 @@ const uploadAllDocuments = async (uploadedFiles, applicationId) => {
 // POST /api/scholarships/tertiary/validate-step?step=1|2|3
 // ────────────────────────────────────────────────────────────
 export const validateTertiaryStep = (req, res) => {
-  const step = parseInt(req.query.step);
-
-  // Step 3 — file validation only
-  if (step === 3) {
-    const uploadedFiles = req.files || {};
-    const incomingFreshman = parseIncomingFreshman(req.body.incoming_freshman);
-    const missing = validateRequiredDocs(uploadedFiles, incomingFreshman);
-
-    if (missing.length > 0) {
-      return res.status(400).json({
-        success: false,
-        step: 3,
-        errors: missing.map((doc) => ({
-          field: doc,
-          message: `${doc.replaceAll('_', ' ')} is required`,
-        })),
-      });
-    }
-
-    return res.status(200).json({ success: true, step: 3 });
-  }
-
-  // Steps 1 & 2 — Joi validation
-  const schema = TERTIARY_STEP_VALIDATORS[step];
-  if (!schema) {
-    return res.status(400).json({
-      success: false,
-      message: 'Invalid step. Must be 1, 2, or 3',
-    });
-  }
-
-  // family_members comes as JSON string from FormData
-  const body = { ...req.body };
-  if (body.family_members && typeof body.family_members === 'string') {
-    try {
-      body.family_members = JSON.parse(body.family_members);
-    } catch {
-      return res.status(400).json({
-        success: false,
-        errors: [{ field: 'family_members', message: 'Invalid JSON format' }],
-      });
-    }
-  }
-
-  const { error } = schema.validate(body, { abortEarly: false });
-  if (error) {
-    return res.status(400).json({
-      success: false,
-      step,
-      errors: error.details.map((d) => ({
-        field: d.path.join('.'),
-        message: d.message,
-      })),
-    });
-  }
-
+  const step = req.tertiaryStep || parseInt(req.query.step, 10);
   return res.status(200).json({ success: true, step });
 };
 
@@ -124,43 +53,16 @@ export const submitTertiaryApplication = async (req, res) => {
   }
 
   const uploadedFiles = req.files || {};
-
-  // parse family_members JSON string
-  let family_members;
-  try {
-    family_members =
-      typeof req.body.family_members === 'string'
-        ? JSON.parse(req.body.family_members)
-        : req.body.family_members;
-  } catch {
-    return res.status(400).json({
-      success: false,
-      message: 'Invalid family_members format',
-    });
-  }
-
-  const incomingFreshman = parseIncomingFreshman(req.body.incoming_freshman);
-
-  // 1. Validate required documents
-  const missingDocs = validateRequiredDocs(uploadedFiles, incomingFreshman);
-  if (missingDocs.length > 0) {
-    return res.status(400).json({
-      success: false,
-      message: 'Missing required documents',
-      errors: missingDocs.map((doc) => ({
-        field: doc,
-        message: `${doc.replaceAll('_', ' ')} is required`,
-      })),
-    });
-  }
+  const submissionPayload = req.body;
+  const incomingFreshman = submissionPayload.incoming_freshman;
+  const family_members = submissionPayload.family_members;
 
   // 2. Insert base application
   const { data: application, error: appError } = await supabase
     .from('applications')
     .insert({
       user_id: userId,
-      application_type: 'tertiary',
-      fund_type: req.body.fund_type,
+        application_type: 'tertiary',
       status: 'pending',
       submitted_at: new Date().toISOString(),
     })
@@ -190,7 +92,7 @@ export const submitTertiaryApplication = async (req, res) => {
       .from('tertiary_application_details')
       .insert({
         application_id: applicationId,
-        scholarship_type: req.body.scholarship_type,
+        scholarship_type: submissionPayload.scholarship_type,
         incoming_freshman: incomingFreshman,
       });
     if (detailError) throw new Error(detailError.message);
@@ -201,9 +103,9 @@ export const submitTertiaryApplication = async (req, res) => {
       .from('secondary_education')
       .insert({
         application_id: applicationId,
-        school_name: req.body.secondary_school,
-        strand: req.body.strand,
-        year_graduated: parseInt(req.body.year_graduated),
+        school_name: submissionPayload.secondary_school,
+        strand: submissionPayload.strand,
+        year_graduated: parseInt(submissionPayload.year_graduated, 10),
       });
     if (secError) throw new Error(secError.message);
 
@@ -213,12 +115,13 @@ export const submitTertiaryApplication = async (req, res) => {
       .from('tertiary_education')
       .insert({
         application_id: applicationId,
-        school_name: req.body.tertiary_school,
-        program: req.body.program,
-        term_type: req.body.term_type,
-        grade_scale: req.body.grade_scale,
-        year_level: req.body.year_level,
-        term: req.body.term,
+        school_name: submissionPayload.tertiary_school,
+        program: submissionPayload.program,
+        term_type: submissionPayload.term_type,
+        grade_scale: submissionPayload.grade_scale,
+        year_level: submissionPayload.year_level,
+        term: submissionPayload.term,
+        expected_graduation_year: parseInt(submissionPayload.expected_graduation_year, 10),
       });
     if (tertError) throw new Error(tertError.message);
 
@@ -276,7 +179,7 @@ export const getMyTertiaryApplications = async (req, res) => {
   const { data, error } = await supabase
     .from('applications')
     .select(`
-      id, fund_type, status, submitted_at, created_at,
+      id, status, submitted_at, created_at,
       tertiary_application_details ( scholarship_type, incoming_freshman ),
       secondary_education ( school_name, strand, year_graduated ),
       tertiary_education ( school_name, program, year_level, term ),
