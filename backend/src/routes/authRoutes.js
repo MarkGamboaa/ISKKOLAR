@@ -5,7 +5,8 @@ import {
   login,
   forgotPassword,
   getCurrentUser,
-  logout
+  logout,
+  getApplicants
 } from '../controllers/authController.js';
 import { validateRequest } from '../middleware/validation.js';
 import { authMiddleware } from '../middleware/auth.js';
@@ -27,5 +28,6 @@ router.post('/forgot-password', validateRequest(forgotPasswordValidation), forgo
 // Protected routes
 router.get('/me', authMiddleware, getCurrentUser);
 router.post('/logout', authMiddleware, logout);
+router.get('/applicants', authMiddleware, getApplicants);
 
 export default router;

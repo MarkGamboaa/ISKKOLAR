@@ -448,6 +448,82 @@ export const logout = async (req, res) => {
   }
 };
 
+// Get all applicants with their application status
+export const getApplicants = async (req, res) => {
+  try {
+    // Get all users with role 'applicant'
+    const { data: applicants, error: applicantsError } = await supabaseAdmin
+      .from('users')
+      .select('id, email, first_name, last_name, profile_picture_url, created_at')
+      .eq('role', 'applicant')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+
+    if (applicantsError) {
+      return res.status(500).json({
+        success: false,
+        message: applicantsError.message || 'Failed to fetch applicants'
+      });
+    }
+
+    if (!applicants || applicants.length === 0) {
+      return res.status(200).json({
+        success: true,
+        data: []
+      });
+    }
+
+    // Get IDs of applicants that have applications
+    const { data: applications, error: applicationsError } = await supabaseAdmin
+      .from('applications')
+      .select('user_id, status, submitted_at')
+      .in('user_id', applicants.map(a => a.id));
+
+    if (applicationsError) {
+      return res.status(500).json({
+        success: false,
+        message: applicationsError.message || 'Failed to fetch applications'
+      });
+    }
+
+    // Create a map of user_id to application info (status and submission date)
+    const applicantApplicationMap = {};
+    if (applications && applications.length > 0) {
+      applications.forEach(app => {
+        applicantApplicationMap[app.user_id] = {
+          status: app.status,
+          submittedAt: app.submitted_at
+        };
+      });
+    }
+
+    // Format applicants with their status and application date
+    const formattedApplicants = applicants.map(applicant => ({
+      id: applicant.id,
+      firstName: applicant.first_name,
+      lastName: applicant.last_name,
+      email: applicant.email,
+      profilePictureUrl: applicant.profile_picture_url,
+      createdAt: applicant.created_at,
+      // Status is 'for review' if they have an application, 'pending' if not
+      applicationStatus: applicantApplicationMap[applicant.id] ? 'for review' : 'pending',
+      // Application submission date (only populated if they have an application)
+      applicationSubmittedAt: applicantApplicationMap[applicant.id]?.submittedAt || null
+    }));
+
+    return res.status(200).json({
+      success: true,
+      data: formattedApplicants
+    });
+  } catch (error) {
+    console.error('Get applicants error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
 // Forgot password
 export const forgotPassword = async (req, res) => {
   try {

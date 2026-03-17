@@ -1,4 +1,5 @@
 import { mockUsers } from "../utils/mockData";
+import api from "./api";
 
 const delay = (ms = 500) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -13,8 +14,16 @@ export const getStaff = async () => {
 };
 
 export const getApplicants = async () => {
-  await delay();
-  return mockUsers.filter((u) => u.role === "applicant");
+  try {
+    const response = await api.get('/auth/applicants');
+    if (response.data.success) {
+      return response.data.data || [];
+    }
+    return [];
+  } catch (error) {
+    console.error('Error fetching applicants:', error);
+    return [];
+  }
 };
 
 export const getUserById = async (id) => {
