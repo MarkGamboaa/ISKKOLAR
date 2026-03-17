@@ -26,6 +26,19 @@ export const getApplicants = async () => {
   }
 };
 
+export const getApplicantDetails = async (applicantId) => {
+  try {
+    const response = await api.get(`/auth/applicants/${applicantId}`);
+    if (response.data.success) {
+      return response.data.data;
+    }
+    throw new Error(response.data.message || 'Failed to fetch applicant details');
+  } catch (error) {
+    console.error('Error fetching applicant details:', error);
+    throw error;
+  }
+};
+
 export const getUserById = async (id) => {
   await delay();
   const user = mockUsers.find((u) => u.id === Number(id));

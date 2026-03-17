@@ -448,6 +448,252 @@ export const logout = async (req, res) => {
   }
 };
 
+// Get applicant details with application and scholarship information
+export const getApplicantDetails = async (req, res) => {
+  try {
+    const { applicantId } = req.params;
+
+    // Get user details
+    const { data: user, error: userError } = await supabaseAdmin
+      .from('users')
+      .select('*')
+      .eq('id', applicantId)
+      .eq('role', 'applicant')
+      .single();
+
+    if (userError || !user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Applicant not found'
+      });
+    }
+
+    // Get application(s) for this user
+    const { data: applications, error: applicationsError } = await supabaseAdmin
+      .from('applications')
+      .select('*')
+      .eq('user_id', applicantId)
+      .order('submitted_at', { ascending: false });
+
+    if (applicationsError) {
+      console.error('Applications error:', applicationsError);
+      return res.status(500).json({
+        success: false,
+        message: applicationsError.message || 'Failed to fetch applications'
+      });
+    }
+
+    // Get scholarship info for each application
+    let applicationsWithDetails = [];
+    if (applications && applications.length > 0) {
+      for (const app of applications) {
+        let scholarship = null;
+        let reviewedBy = null;
+        let familyMembers = [];
+        let documents = [];
+        let typeSpecificData = null;
+
+        // Get scholarship details
+        if (app.scholarship_id) {
+          const { data: scholarshipData, error: scholarshipError } = await supabaseAdmin
+            .from('scholarships')
+            .select('*')
+            .eq('id', app.scholarship_id)
+            .single();
+
+          if (!scholarshipError && scholarshipData) {
+            scholarship = {
+              id: scholarshipData.id,
+              title: scholarshipData.title,
+              description: scholarshipData.description,
+              amount: scholarshipData.amount,
+              requirementsJson: scholarshipData.requirements_json,
+              applicationDeadline: scholarshipData.application_deadline,
+              status: scholarshipData.status
+            };
+          }
+        }
+
+        // Get reviewer details if exists
+        if (app.reviewed_by) {
+          const { data: reviewerData, error: reviewerError } = await supabaseAdmin
+            .from('users')
+            .select('id, first_name, last_name, email')
+            .eq('id', app.reviewed_by)
+            .single();
+
+          if (!reviewerError && reviewerData) {
+            reviewedBy = {
+              id: reviewerData.id,
+              firstName: reviewerData.first_name,
+              lastName: reviewerData.last_name,
+              email: reviewerData.email
+            };
+          }
+        }
+
+        // Get family members for this application
+        const { data: familyData, error: familyError } = await supabaseAdmin
+          .from('family_members')
+          .select('*')
+          .eq('application_id', app.id);
+
+        if (!familyError && familyData && familyData.length > 0) {
+          familyMembers = familyData.map(member => ({
+            id: member.id,
+            fullName: member.full_name,
+            relationship: member.relationship,
+            age: member.age,
+            occupation: member.occupation,
+            monthlyIncome: member.monthly_income,
+            status: member.status
+          }));
+        }
+
+        // Get application documents for this application
+        const { data: docData, error: docError } = await supabaseAdmin
+          .from('application_documents')
+          .select('*')
+          .eq('application_id', app.id);
+
+        if (!docError && docData && docData.length > 0) {
+          documents = docData.map(doc => ({
+            id: doc.id,
+            documentType: doc.document_type,
+            fileName: doc.file_name,
+            filePath: doc.file_path,
+            fileSize: doc.file_size,
+            mimeType: doc.mime_type,
+            uploadedAt: doc.uploaded_at,
+            isRequired: doc.is_required
+          }));
+        }
+
+        // Get type-specific data based on application_type
+        if (app.application_type) {
+          if (app.application_type.toLowerCase() === 'tertiary') {
+            const { data: tertiaryDetails } = await supabaseAdmin
+              .from('tertiary_application_details')
+              .select('*')
+              .eq('application_id', app.id)
+              .single();
+
+            const { data: tertiaryEducation } = await supabaseAdmin
+              .from('tertiary_education')
+              .select('*')
+              .eq('application_id', app.id);
+
+            typeSpecificData = {
+              type: 'tertiary',
+              details: tertiaryDetails ? {
+                incomingFreshman: tertiaryDetails.incoming_freshman,
+                schoolName: tertiaryDetails.school_name,
+                course: tertiaryDetails.course,
+                yearLevel: tertiaryDetails.year_level,
+                gpa: tertiaryDetails.gpa,
+                tuitionFee: tertiaryDetails.tuition_fee,
+                miscellaneousFee: tertiaryDetails.miscellaneous_fee,
+                detailsJson: tertiaryDetails.details_json
+              } : null,
+              education: tertiaryEducation && tertiaryEducation.length > 0 ? tertiaryEducation.map(edu => ({
+                id: edu.id,
+                schoolName: edu.school_name,
+                level: edu.level,
+                yearCompleted: edu.year_completed,
+                generalAverage: edu.general_average,
+                certificateFileUrl: edu.certificate_file_url
+              })) : []
+            };
+          } else if (app.application_type.toLowerCase() === 'vocational') {
+            const { data: vocationalDetails } = await supabaseAdmin
+              .from('vocational_application_details')
+              .select('*')
+              .eq('application_id', app.id)
+              .single();
+
+            const { data: vocationalEducation } = await supabaseAdmin
+              .from('vocational_education')
+              .select('*')
+              .eq('application_id', app.id);
+
+            typeSpecificData = {
+              type: 'vocational',
+              details: vocationalDetails ? {
+                programName: vocationalDetails.program_name,
+                trainingCenter: vocationalDetails.training_center,
+                duration: vocationalDetails.duration,
+                startDate: vocationalDetails.start_date,
+                endDate: vocationalDetails.end_date,
+                trainingCost: vocationalDetails.training_cost,
+                detailsJson: vocationalDetails.details_json
+              } : null,
+              education: vocationalEducation && vocationalEducation.length > 0 ? vocationalEducation.map(edu => ({
+                id: edu.id,
+                courseName: edu.course_name,
+                provider: edu.provider,
+                completionDate: edu.completion_date,
+                certificateFileUrl: edu.certificate_file_url
+              })) : []
+            };
+          }
+        }
+
+        applicationsWithDetails.push({
+          id: app.id,
+          applicationType: app.application_type,
+          status: app.status,
+          submittedAt: app.submitted_at,
+          reviewedAt: app.reviewed_at,
+          reviewedBy: reviewedBy,
+          notes: app.notes,
+          familyMembers: familyMembers,
+          documents: documents,
+          typeSpecificData: typeSpecificData,
+          scholarship: scholarship,
+          createdAt: app.created_at
+        });
+      }
+    }
+
+    const formattedUser = {
+      id: user.id,
+      firstName: user.first_name,
+      middleName: user.middle_name,
+      lastName: user.last_name,
+      suffix: user.suffix,
+      email: user.email,
+      birthday: user.birthday,
+      gender: user.gender,
+      civilStatus: user.civil_status,
+      citizenship: user.citizenship,
+      mobileNumber: user.mobile_number,
+      facebook: user.facebook,
+      street: user.street,
+      barangay: user.barangay,
+      city: user.city,
+      province: user.province,
+      country: user.country,
+      zipCode: user.zip_code,
+      profilePictureUrl: user.profile_picture_url,
+      createdAt: user.created_at
+    };
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        user: formattedUser,
+        applications: applicationsWithDetails
+      }
+    });
+  } catch (error) {
+    console.error('Get applicant details error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
 // Get all applicants with their application status
 export const getApplicants = async (req, res) => {
   try {
