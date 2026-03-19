@@ -34,7 +34,7 @@ const ForgotPasswordPage = () => {
             <div className="text-[48px] mb-3">📧</div>
             <h2 className="text-[22px] font-semibold text-[#333] mb-2">Check Your Email</h2>
             <p className="text-[#666] text-sm mb-6 leading-relaxed">A password reset link has been sent to your email address.</p>
-            <Link to="/" className="block p-[13px] bg-[#5b5f97] text-white rounded-lg text-[15px] font-semibold no-underline text-center hover:bg-[#4a4e7d] transition-colors">
+            <Link to="/login" className="block p-[13px] bg-[#5b5f97] text-white rounded-lg text-[15px] font-semibold no-underline text-center hover:bg-[#4a4e7d] transition-colors">
               Back to Login
             </Link>
           </div>

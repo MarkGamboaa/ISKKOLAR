@@ -78,7 +78,7 @@ const ResetPasswordPage = () => {
             Your password has been changed successfully. You can now log in with your new password.
           </p>
           <Link
-            to="/"
+            to="/login"
             className="block p-[13px] bg-primary text-white rounded-lg text-[15px] font-semibold no-underline text-center hover:bg-primary-dark transition-colors"
           >
             Go to Login
@@ -96,7 +96,7 @@ const ResetPasswordPage = () => {
         <div className="flex items-center justify-between mb-5">
           <button
             type="button"
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/login")}
             className="flex items-center gap-1.5 text-primary text-sm no-underline hover:underline"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-4 h-4">

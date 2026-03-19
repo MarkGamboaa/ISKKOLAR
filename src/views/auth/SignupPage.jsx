@@ -185,7 +185,7 @@ const SignupPage = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <Link to="/" className="block w-full bg-[#5b5f97] text-white py-3 rounded-lg font-medium hover:bg-[#4a4d7d] transition-colors">
+          <Link to="/login" className="block w-full bg-[#5b5f97] text-white py-3 rounded-lg font-medium hover:bg-[#4a4d7d] transition-colors">
             Continue
           </Link>
         </div>
@@ -197,7 +197,7 @@ const SignupPage = () => {
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 flex justify-center">
       <div className="max-w-3xl w-full">
         <div className="bg-[#5b5f97] rounded-t-xl p-8 text-white relative">
-          <button onClick={() => step > 1 ? handleBack() : navigate("/")} className="absolute top-8 left-8 p-1.5 bg-white/20 rounded-md hover:bg-white/30 transition-colors">
+          <button onClick={() => step > 1 ? handleBack() : navigate("/login")} className="absolute top-8 left-8 p-1.5 bg-white/20 rounded-md hover:bg-white/30 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
@@ -576,7 +576,7 @@ const SignupPage = () => {
 
           {step < 4 && (
             <div className="mt-6 text-center text-sm text-gray-500">
-              Already have an account? <Link to="/" className="text-[#5b5f97] font-semibold hover:underline">Login here.</Link>
+              Already have an account? <Link to="/login" className="text-[#5b5f97] font-semibold hover:underline">Login here.</Link>
             </div>
           )}
         </div>

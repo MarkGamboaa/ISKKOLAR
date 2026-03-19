@@ -10,7 +10,7 @@ const PrivateRoute = ({ children, allowedRoles }) => {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (allowedRoles && !allowedRoles.includes(user?.userType)) {
