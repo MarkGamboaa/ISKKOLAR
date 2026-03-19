@@ -62,7 +62,8 @@ export const submitTertiaryApplication = async (req, res) => {
     .from('applications')
     .insert({
       user_id: userId,
-        application_type: 'tertiary',
+      application_type: 'tertiary',
+      fund_type: submissionPayload.fund_type ?? null,
       status: 'pending',
       submitted_at: new Date().toISOString(),
     })

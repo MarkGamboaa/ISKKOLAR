@@ -40,9 +40,11 @@ const ApplicantDashboard = () => {
   ];
 
   const renderFormForProgram = () => {
+    const handleSubmitted = () => setSearchParams({ tab: "application" });
+
     switch (programSlug) {
       case "tertiary":
-        return <TertiaryScholarshipForm onBack={() => setSearchParams({ program: programSlug })} />;
+        return <TertiaryScholarshipForm onBack={() => setSearchParams({ program: programSlug })} onSubmitted={handleSubmitted} />;
       case "employee-child":
         return <StaffEducationalForm onBack={() => setSearchParams({ program: programSlug })} />;
       case "vocational":

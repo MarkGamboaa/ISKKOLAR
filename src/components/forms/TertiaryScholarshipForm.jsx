@@ -4,7 +4,7 @@ import {
   submitTertiaryApplication,
 } from '../../services/tertiaryService';
 
-const TertiaryScholarshipForm = ({ onBack }) => {
+const TertiaryScholarshipForm = ({ onBack, onSubmitted }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [termType, setTermType] = useState('Semester');
   const fileInputClass = "block w-full text-sm text-gray-500 file:cursor-pointer file:mr-4 file:py-3 file:px-4 file:border-0 file:border-r file:border-gray-200 file:text-sm file:font-semibold file:bg-gray-50 file:text-[#5b5f97] hover:file:bg-gray-100 border border-gray-200 rounded-lg focus:outline-none cursor-pointer bg-white";
@@ -52,6 +52,8 @@ const TertiaryScholarshipForm = ({ onBack }) => {
   const [serverMessage, setServerMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  const requiresWorkInfo = (status) => status === 'Employed' || status === 'Self-Employed';
 
   // Convert server errors array → { fieldKey: message } map
   const normalizeErrors = (error) => {
@@ -216,7 +218,18 @@ const TertiaryScholarshipForm = ({ onBack }) => {
   };
 
   const handleFormChange = (field, value) => {
-    setForm(prev => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      if (field === 'fatherStatus' && !requiresWorkInfo(value)) {
+        next.fatherOccupation = '';
+        next.fatherIncome = '';
+      }
+      if (field === 'motherStatus' && !requiresWorkInfo(value)) {
+        next.motherOccupation = '';
+        next.motherIncome = '';
+      }
+      return next;
+    });
     if (field === 'termType') setTermType(value);
     clearFieldErrors(
       formErrorFieldMap[field],
@@ -225,6 +238,14 @@ const TertiaryScholarshipForm = ({ onBack }) => {
       field === 'motherOccupation' ? 'family_members.1.occupation' : null,
       field === 'motherIncome' ? 'family_members.1.monthly_income' : null
     );
+
+    if (field === 'fatherStatus' && !requiresWorkInfo(value)) {
+      clearFieldErrors('father_occupation', 'father_monthly_income', 'family_members.0.occupation', 'family_members.0.monthly_income');
+    }
+
+    if (field === 'motherStatus' && !requiresWorkInfo(value)) {
+      clearFieldErrors('mother_occupation', 'mother_monthly_income', 'family_members.1.occupation', 'family_members.1.monthly_income');
+    }
 
     if (field === 'incomingFreshman' && value === 'Yes') {
       clearFieldErrors('current_term_report');
@@ -259,6 +280,9 @@ const TertiaryScholarshipForm = ({ onBack }) => {
       const response = await submitTertiaryApplication(buildSubmitPayload(), buildFilesPayload());
       setSubmitSuccess(true);
       setServerMessage(response?.message || 'Application submitted successfully.');
+      if (typeof onSubmitted === 'function') {
+        onSubmitted(response?.data);
+      }
     } catch (error) {
       setFieldErrors(normalizeErrors(error));
       setServerMessage(error?.message || 'Submission failed.');
@@ -273,6 +297,10 @@ const TertiaryScholarshipForm = ({ onBack }) => {
   const updateFamilyMember = (index, field, value) => {
     const updated = [...additionalMembers];
     updated[index][field] = value;
+    if (field === 'status' && !requiresWorkInfo(value)) {
+      updated[index].occupation = '';
+      updated[index].income = '';
+    }
     setAdditionalMembers(updated);
 
     const errorKeyMap = {
@@ -285,6 +313,15 @@ const TertiaryScholarshipForm = ({ onBack }) => {
       `additional_${index}_${errorKeyMap[field]}`,
       `family_members.${index + 2}.${errorKeyMap[field]}`
     );
+
+    if (field === 'status' && !requiresWorkInfo(value)) {
+      clearFieldErrors(
+        `additional_${index}_occupation`,
+        `additional_${index}_monthly_income`,
+        `family_members.${index + 2}.occupation`,
+        `family_members.${index + 2}.monthly_income`
+      );
+    }
   };
 
   const steps = [
@@ -493,19 +530,24 @@ const TertiaryScholarshipForm = ({ onBack }) => {
                   <option>Employed</option>
                   <option>Unemployed</option>
                   <option>Self-Employed</option>
+                  <option>Deceased</option>
                 </select>
                 <FieldError name="father_employment_status" />
               </div>
-              <div>
-                <label className="block text-sm text-gray-600 font-medium mb-1.5">Occupation</label>
-                <input type="text" value={form.fatherOccupation} onChange={(e) => handleFormChange('fatherOccupation', e.target.value)} placeholder="Enter Occupation" className={`w-full p-3 border rounded-lg text-sm focus:outline-none ${inputBorder('father_occupation')}`} />
-                <FieldError name="father_occupation" />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 font-medium mb-1.5">Monthly Income</label>
-                <input type="text" value={form.fatherIncome} onChange={(e) => handleFormChange('fatherIncome', e.target.value)} placeholder="Enter Monthly Income" className={`w-full p-3 border rounded-lg text-sm focus:outline-none ${inputBorder('father_monthly_income')}`} />
-                <FieldError name="father_monthly_income" />
-              </div>
+              {requiresWorkInfo(form.fatherStatus) && (
+                <>
+                  <div>
+                    <label className="block text-sm text-gray-600 font-medium mb-1.5">Occupation</label>
+                    <input type="text" value={form.fatherOccupation} onChange={(e) => handleFormChange('fatherOccupation', e.target.value)} placeholder="Enter Occupation" className={`w-full p-3 border rounded-lg text-sm focus:outline-none ${inputBorder('father_occupation')}`} />
+                    <FieldError name="father_occupation" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 font-medium mb-1.5">Monthly Income</label>
+                    <input type="text" value={form.fatherIncome} onChange={(e) => handleFormChange('fatherIncome', e.target.value)} placeholder="Enter Monthly Income" className={`w-full p-3 border rounded-lg text-sm focus:outline-none ${inputBorder('father_monthly_income')}`} />
+                    <FieldError name="father_monthly_income" />
+                  </div>
+                </>
+              )}
             </div>
             <h3 className="text-lg font-bold text-[#5b5f97] border-l-4 border-[#5b5f97] pl-3 mb-4">Mother's Information</h3>
             <div className="space-y-4">
@@ -520,19 +562,24 @@ const TertiaryScholarshipForm = ({ onBack }) => {
                   <option>Employed</option>
                   <option>Unemployed</option>
                   <option>Self-Employed</option>
+                  <option>Deceased</option>
                 </select>
                 <FieldError name="mother_employment_status" />
               </div>
-              <div>
-                <label className="block text-sm text-gray-600 font-medium mb-1.5">Occupation</label>
-                <input type="text" value={form.motherOccupation} onChange={(e) => handleFormChange('motherOccupation', e.target.value)} placeholder="Enter Occupation" className={`w-full p-3 border rounded-lg text-sm focus:outline-none ${inputBorder('mother_occupation')}`} />
-                <FieldError name="mother_occupation" />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 font-medium mb-1.5">Monthly Income</label>
-                <input type="text" value={form.motherIncome} onChange={(e) => handleFormChange('motherIncome', e.target.value)} placeholder="Enter Monthly Income" className={`w-full p-3 border rounded-lg text-sm focus:outline-none ${inputBorder('mother_monthly_income')}`} />
-                <FieldError name="mother_monthly_income" />
-              </div>
+              {requiresWorkInfo(form.motherStatus) && (
+                <>
+                  <div>
+                    <label className="block text-sm text-gray-600 font-medium mb-1.5">Occupation</label>
+                    <input type="text" value={form.motherOccupation} onChange={(e) => handleFormChange('motherOccupation', e.target.value)} placeholder="Enter Occupation" className={`w-full p-3 border rounded-lg text-sm focus:outline-none ${inputBorder('mother_occupation')}`} />
+                    <FieldError name="mother_occupation" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 font-medium mb-1.5">Monthly Income</label>
+                    <input type="text" value={form.motherIncome} onChange={(e) => handleFormChange('motherIncome', e.target.value)} placeholder="Enter Monthly Income" className={`w-full p-3 border rounded-lg text-sm focus:outline-none ${inputBorder('mother_monthly_income')}`} />
+                    <FieldError name="mother_monthly_income" />
+                  </div>
+                </>
+              )}
             </div>
 
             {additionalMembers.map((member, index) => (
@@ -549,16 +596,21 @@ const TertiaryScholarshipForm = ({ onBack }) => {
                   <option>Employed</option>
                   <option>Unemployed</option>
                   <option>Self-Employed</option>
+                  <option>Deceased</option>
                 </select>
                 <FieldError name={`additional_${index}_employment_status`} />
 
-                <label className="block text-sm text-gray-600 font-medium mb-1.5 mt-3">Occupation</label>
-                <input type="text" value={member.occupation} onChange={(e) => updateFamilyMember(index, 'occupation', e.target.value)} placeholder="Enter Occupation" className={`w-full p-3 border rounded-lg text-sm focus:outline-none mb-1 ${inputBorder(`additional_${index}_occupation`)}`} />
-                <FieldError name={`additional_${index}_occupation`} />
+                {requiresWorkInfo(member.status) && (
+                  <>
+                    <label className="block text-sm text-gray-600 font-medium mb-1.5 mt-3">Occupation</label>
+                    <input type="text" value={member.occupation} onChange={(e) => updateFamilyMember(index, 'occupation', e.target.value)} placeholder="Enter Occupation" className={`w-full p-3 border rounded-lg text-sm focus:outline-none mb-1 ${inputBorder(`additional_${index}_occupation`)}`} />
+                    <FieldError name={`additional_${index}_occupation`} />
 
-                <label className="block text-sm text-gray-600 font-medium mb-1.5 mt-3">Monthly Income</label>
-                <input type="text" value={member.income} onChange={(e) => updateFamilyMember(index, 'income', e.target.value)} placeholder="Enter Monthly Income" className={`w-full p-3 border rounded-lg text-sm focus:outline-none ${inputBorder(`additional_${index}_monthly_income`)}`} />
-                <FieldError name={`additional_${index}_monthly_income`} />
+                    <label className="block text-sm text-gray-600 font-medium mb-1.5 mt-3">Monthly Income</label>
+                    <input type="text" value={member.income} onChange={(e) => updateFamilyMember(index, 'income', e.target.value)} placeholder="Enter Monthly Income" className={`w-full p-3 border rounded-lg text-sm focus:outline-none ${inputBorder(`additional_${index}_monthly_income`)}`} />
+                    <FieldError name={`additional_${index}_monthly_income`} />
+                  </>
+                )}
               </div>
             ))}
 
