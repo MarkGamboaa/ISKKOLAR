@@ -7,7 +7,10 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "db:migrate": "node --input-type=module -e \"import('./src/database/migration.js').then(m => m.default()).catch(e => {console.error(e); process.exit(1)})\"",
+    "db:seed": "node --input-type=module -e \"import('./src/database/seeder.js').then(m => m.default()).catch(e => {console.error(e); process.exit(1)})\"",
+    "db:setup": "node --input-type=module -e \"import('./src/database/index.js').then(m => m.default.setup()).catch(e => {console.error(e); process.exit(1)})\""
   },
   "keywords": [
     "scholarship",
@@ -21,7 +24,8 @@
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
-    "joi": "^17.9.2",
+    "pg": "^8.11.3",
+    "zod": "^3.22.4",
     "jsonwebtoken": "^9.0.0",
     "multer": "^2.1.1",
     "nodemailer": "^8.0.2"
