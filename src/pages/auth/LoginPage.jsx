@@ -11,12 +11,26 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+    // Clear error for this field when user starts typing
+    if (errors[name]) {
+      setErrors({ ...errors, [name]: "" });
+    }
+    // Clear API error when user starts typing
+    if (apiError) {
+      setApiError("");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = {};
     if (!form.email.trim()) errs.email = "Email is required";
     else if (!/\S+@\S+\.\S+/.test(form.email)) errs.email = "Invalid email format";
     if (!form.password.trim()) errs.password = "Password is required";
+    
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
 
@@ -61,8 +75,9 @@ const LoginPage = () => {
               <div className="relative">
                 <input
                   type="email"
+                  name="email"
                   value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  onChange={handleChange}
                   placeholder="Enter your email"
                   className={`w-full py-3 pr-10 pl-3.5 border rounded-lg text-sm outline-none box-border transition-colors duration-200 focus:border-[#5b5f97] ${errors.email ? 'border-[#dc2626]' : 'border-[#e0e0e0]'}`}
                 />
@@ -80,8 +95,9 @@ const LoginPage = () => {
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
+                  name="password"
                   value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  onChange={handleChange}
                   placeholder="Enter your password"
                   className={`w-full py-3 pr-10 pl-3.5 border rounded-lg text-sm outline-none box-border transition-colors duration-200 focus:border-[#5b5f97] ${errors.password ? 'border-[#dc2626]' : 'border-[#e0e0e0]'}`}
                 />
