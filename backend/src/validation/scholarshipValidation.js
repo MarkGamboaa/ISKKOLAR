@@ -1,4 +1,4 @@
-import Joi from 'joi';
+import { z } from 'zod';
 
 // ─── Constants ───────────────────────────────────────────────
 export const ALLOWED_DOC_MIME_TYPES = [
@@ -22,139 +22,97 @@ export const REQUIRED_DOCUMENT_TYPES = [
 export const OPTIONAL_DOCUMENT_TYPES = ['recommendation_letter'];
 
 // ─── Reusable sub-schemas ─────────────────────────────────────
-const familyMemberSchema = Joi.object({
-  role: Joi.string().valid('father', 'mother', 'other').required().messages({
-    'any.required': 'Role is required',
-    'any.only': 'Invalid role',
+const familyMemberSchema = z.object({
+  role: z.enum(['father', 'mother', 'other'], {
+    message: 'Invalid role'
   }),
-  full_name: Joi.string().trim().min(2).max(255).required().messages({
-    'string.empty': 'Name is required',
-    'string.min': 'Name is too short',
-    'any.required': 'Name is required',
+  full_name: z.string()
+    .min(1, 'Name is required')
+    .min(2, 'Name is too short')
+    .max(255, 'Name is too long'),
+  employment_status: z.enum(['Employed', 'Unemployed', 'Self-Employed'], {
+    message: 'Invalid employment status'
   }),
-  employment_status: Joi.string()
-    .valid('Employed', 'Unemployed', 'Self-Employed')
-    .required()
-    .messages({
-      'any.only': 'Invalid employment status',
-      'any.required': 'Employment status is required',
-    }),
-  occupation: Joi.when('employment_status', {
-    is: Joi.valid('Employed', 'Self-Employed'),
-    then: Joi.string().trim().min(2).max(255).required().messages({
-      'string.base': 'Occupation is required',
-      'string.min': 'Occupation is too short',
-      'string.max': 'Occupation is too long',
-      'any.required': 'Occupation is required',
-    })
-  }),
-  monthly_income: Joi.when('employment_status', {
-    is: Joi.valid('Employed', 'Self-Employed'),
-    then: Joi.number().min(0).required().messages({
-      'number.base': 'Monthly income is required',
-      'number.min': 'Monthly income cannot be negative',
-    }),
-    otherwise: Joi.number().min(0).allow('', null),
-  }),
-});
+  occupation: z.string().min(2, 'Occupation is too short').max(255, 'Occupation is too long').optional(),
+  monthly_income: z.number().min(0, 'Monthly income cannot be negative').optional().nullable()
+}).refine(
+  (data) => {
+    // If employed or self-employed, occupation and income are required
+    if (['Employed', 'Self-Employed'].includes(data.employment_status)) {
+      return !!data.occupation && data.monthly_income !== null && data.monthly_income !== undefined;
+    }
+    return true;
+  },
+  {
+    message: 'Occupation and monthly income are required for employed or self-employed individuals',
+    path: ['occupation']
+  }
+);
 
 // ─── Step 1: Academic Information ────────────────────────────
-export const tertiaryStep1Validation = Joi.object({
-  // Scholarship info
-  scholarship_type: Joi.string()
-    .messages({ 'any.only': 'Invalid scholarship type' }),
-
-    incoming_freshman: Joi.boolean().required().messages({
-      'boolean.base': 'Incoming freshman field must be true or false',
-      'any.required': 'Incoming freshman field is required',
-    }),
-
-  // Secondary education
-  secondary_school: Joi.string().min(2).max(255).required().messages({
-    'string.empty': 'Secondary school name is required',
+export const tertiaryStep1Validation = z.object({
+  scholarship_type: z.string().optional(),
+  incoming_freshman: z.boolean({
+    message: 'Incoming freshman field must be true or false'
   }),
-  strand: Joi.string()
-    .required()
-    .messages({ 'any.only': 'Invalid strand' }),
-    year_graduated: Joi.number()
-    .integer()
-    .min(1950)
-    .max(new Date().getFullYear())
-    .required()
-    .messages({ 'number.max': 'Year graduated cannot be in the future' }),
-
-  // Tertiary education
-  tertiary_school: Joi.string().min(2).max(255).required().messages({
-    'string.empty': 'Tertiary school name is required',
-  }),
-  program: Joi.string().min(2).max(255).required().messages({
-    'string.empty': 'Program is required',
-  }),
-  term_type: Joi.string()
-    .required(),
-  grade_scale: Joi.string()
-    .required(),
-  year_level: Joi.string()
-    .required(),
-  term: Joi.string()
-    .required(),
-  expected_graduation_year: Joi.number()
-    .integer()
-    .min(new Date().getFullYear())
-    .max(new Date().getFullYear() + 10)
-    .required()
-    .messages({
-      'number.base': 'Expected graduation year is required',
-      'number.min': `Expected graduation year must be ${new Date().getFullYear()} or later`,
-      'number.max': 'Expected graduation year seems too far in the future',
-    }),
-}).custom((value, helpers) => {
-  // cross-field: term options depend on term_type
-  const validTerms = {
-    Semester: ['1st', '2nd'],
-    Trimester: ['1st', '2nd', '3rd'],
-    'Quarter System': ['1st', '2nd', '3rd', '4th'],
-  };
-  if (!validTerms[value.term_type]?.includes(value.term)) {
-    return helpers.error('any.invalid', {
-      message: `Term "${value.term}" is not valid for ${value.term_type}`,
-    });
+  secondary_school: z.string()
+    .min(1, 'Secondary school name is required')
+    .min(2, 'Secondary school name is too short')
+    .max(255, 'Secondary school name is too long'),
+  strand: z.string().min(1, 'Strand is required'),
+  year_graduated: z.number()
+    .int('Year graduated must be an integer')
+    .min(1950, 'Year graduated must be after 1950')
+    .max(new Date().getFullYear(), 'Year graduated cannot be in the future'),
+  tertiary_school: z.string()
+    .min(1, 'Tertiary school name is required')
+    .min(2, 'Tertiary school name is too short')
+    .max(255, 'Tertiary school name is too long'),
+  program: z.string()
+    .min(1, 'Program is required')
+    .min(2, 'Program is too short')
+    .max(255, 'Program is too long'),
+  term_type: z.string().min(1, 'Term type is required'),
+  grade_scale: z.string().min(1, 'Grade scale is required'),
+  year_level: z.string().min(1, 'Year level is required'),
+  term: z.string().min(1, 'Term is required'),
+  expected_graduation_year: z.number()
+    .int('Expected graduation year must be an integer')
+    .min(new Date().getFullYear(), `Expected graduation year must be ${new Date().getFullYear()} or later`)
+    .max(new Date().getFullYear() + 10, 'Expected graduation year seems too far in the future')
+}).refine(
+  (data) => {
+    // cross-field: term options depend on term_type
+    const validTerms = {
+      Semester: ['1st', '2nd'],
+      Trimester: ['1st', '2nd', '3rd'],
+      'Quarter System': ['1st', '2nd', '3rd', '4th'],
+    };
+    return validTerms[data.term_type]?.includes(data.term) ?? false;
+  },
+  {
+    message: (data) => ({
+      term: `Term "${data.term}" is not valid for ${data.term_type}`
+    })
   }
-  return value;
-});
+);
 
 // ─── Step 2: Family Information ───────────────────────────────
-export const tertiaryStep2Validation = Joi.object({
-  family_members: Joi.array()
-    .items(familyMemberSchema)
-    .min(2)
-    .required()
-    .custom((members, helpers) => {
-      const roles = members.map((m) => m.role);
-      if (!roles.includes('father'))
-        return helpers.error('any.custom', {
-          custom: 'Father info is required',
-        });
-      if (!roles.includes('mother'))
-        return helpers.error('any.custom', {
-          custom: 'Mother info is required',
-        });
-      return members;
-    })
-    .messages({
-      'array.base': 'Family info is required',
-      'array.min': 'Add at least father and mother',
-      'any.required': 'Family info is required',
-      'any.custom': '{{#custom}}',
-    }),
+export const tertiaryStep2Validation = z.object({
+  family_members: z.array(familyMemberSchema)
+    .min(2, 'Add at least father and mother')
+    .refine(
+      (members) => members.some((m) => m.role === 'father'),
+      'Father info is required'
+    )
+    .refine(
+      (members) => members.some((m) => m.role === 'mother'),
+      'Mother info is required'
+    )
 });
 
-// ─── Step 3: handled in middleware (file validation) ─────────
-
 // ─── Full submission: Step 1 + Step 2 combined ────────────────
-export const tertiarySubmitValidation = tertiaryStep1Validation.concat(
-  tertiaryStep2Validation
-);
+export const tertiarySubmitValidation = tertiaryStep1Validation.and(tertiaryStep2Validation);
 
 // ─── Step map for validate-step endpoint ─────────────────────
 export const TERTIARY_STEP_VALIDATORS = {

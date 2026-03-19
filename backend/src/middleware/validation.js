@@ -7,15 +7,12 @@ import {
 // Validation middleware
 export const validateRequest = (schema) => {
   return (req, res, next) => {
-    const { error, value } = schema.validate(req.body, {
-      abortEarly: false,
-      stripUnknown: true
-    });
+    const result = schema.safeParse(req.body);
 
-    if (error) {
-      const messages = error.details.map(detail => ({
-        field: detail.path.join('.'),
-        message: detail.message
+    if (!result.success) {
+      const messages = result.error.errors.map(issue => ({
+        field: issue.path.join('.') || 'general',
+        message: issue.message
       }));
       return res.status(400).json({
         success: false,
@@ -24,7 +21,7 @@ export const validateRequest = (schema) => {
       });
     }
 
-    req.body = value;
+    req.body = result.data;
     next();
   };
 };
@@ -95,12 +92,12 @@ export const validateTertiaryStepPayload = (req, res, next) => {
   }
 
   const schema = TERTIARY_STEP_VALIDATORS[step];
-  const { error, value } = schema.validate(req.body, { abortEarly: false });
+  const result = schema.safeParse(req.body);
 
-  if (error) {
-    const payloadErrors = error.details.map((d) => ({
-      field: d.path.join('.'),
-      message: d.message,
+  if (!result.success) {
+    const payloadErrors = result.error.errors.map((issue) => ({
+      field: issue.path.join('.') || 'general',
+      message: issue.message,
     }));
 
     // For step 1, continue so file validation can run and return a combined error list.
@@ -116,7 +113,7 @@ export const validateTertiaryStepPayload = (req, res, next) => {
     });
   }
 
-  req.body = value;
+  req.body = result.data;
   next();
 };
 
@@ -150,23 +147,21 @@ export const validateTertiaryStepFiles = (req, res, next) => {
 };
 
 export const validateTertiarySubmission = (req, res, next) => {
-  const { error, value } = tertiarySubmitValidation.validate(req.body, {
-    abortEarly: false,
-  });
+  const result = tertiarySubmitValidation.safeParse(req.body);
 
-  if (error) {
+  if (!result.success) {
     return res.status(400).json({
       success: false,
       message: 'Validation error',
-      errors: error.details.map((d) => ({
-        field: d.path.join('.'),
-        message: d.message,
+      errors: result.error.errors.map((issue) => ({
+        field: issue.path.join('.') || 'general',
+        message: issue.message,
       })),
     });
   }
 
   const uploadedFiles = req.files || {};
-  const incomingFreshman = value.incoming_freshman === true;
+  const incomingFreshman = result.data.incoming_freshman === true;
   const missingDocs = missingRequiredDocs(
     uploadedFiles,
     requiredDocsForSubmission(incomingFreshman)
@@ -183,6 +178,6 @@ export const validateTertiarySubmission = (req, res, next) => {
     });
   }
 
-  req.body = value;
+  req.body = result.data;
   next();
 };
