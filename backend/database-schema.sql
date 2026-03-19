@@ -65,7 +65,7 @@ CREATE TABLE applications (
   -- 'kkfi_grant'
   -- 'vocational'
 
-  fund_type       TEXT NOT NULL,  -- 'KKFI Funded' | 'Partner Funded'
+  fund_type       TEXT,           -- nullable: 'KKFI Funded' | 'Partner Funded'
   status          TEXT DEFAULT 'pending',
   -- 'pending' | 'under_review' | 'approved' | 'rejected'
 
