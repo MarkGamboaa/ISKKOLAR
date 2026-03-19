@@ -26,11 +26,10 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">IS</span>
-            </div>
             <div>
-              <span className="text-lg font-bold text-primary tracking-tight">ISKKOLAR</span>
+              <span className="text-lg font-bold text-primary tracking-tight">
+              IS<span className="text-yellow-400">KK</span>OLAR
+              </span>
               <span className="hidden sm:inline text-xs text-gray-400 ml-1.5">by KKFI</span>
             </div>
           </div>
