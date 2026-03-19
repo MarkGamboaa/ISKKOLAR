@@ -1,6 +1,11 @@
 import { supabaseAdmin as supabase } from '../config/supabase.js';
 
 const SCHOLARSHIP_DOCS_BUCKET = 'scholarship-documents';
+const SCHOLARSHIP_ALLOWED_MIME_TYPES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+];
 
 const resolveContentType = (file) => {
   const mime = (file.mimetype || '').toLowerCase();
@@ -25,17 +30,24 @@ const ensureDocsBucket = async () => {
   const { data: existingBucket, error: getBucketError } = await supabase.storage.getBucket(SCHOLARSHIP_DOCS_BUCKET);
 
   if (!getBucketError && existingBucket) {
+    // Keep bucket settings in sync so existing buckets also accept DOCX.
+    const { error: updateBucketError } = await supabase.storage.updateBucket(SCHOLARSHIP_DOCS_BUCKET, {
+      public: false,
+      fileSizeLimit: 10 * 1024 * 1024,
+      allowedMimeTypes: SCHOLARSHIP_ALLOWED_MIME_TYPES,
+    });
+
+    if (updateBucketError) {
+      throw new Error(`Storage bucket update failed: ${updateBucketError.message}`);
+    }
+
     return;
   }
 
   const { error: createBucketError } = await supabase.storage.createBucket(SCHOLARSHIP_DOCS_BUCKET, {
     public: false,
     fileSizeLimit: 10 * 1024 * 1024,
-    allowedMimeTypes: [
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    ],
+    allowedMimeTypes: SCHOLARSHIP_ALLOWED_MIME_TYPES,
   });
 
   if (createBucketError && !createBucketError.message?.toLowerCase().includes('already exists')) {
