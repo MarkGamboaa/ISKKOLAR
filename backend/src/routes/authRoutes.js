@@ -4,6 +4,7 @@ import {
   signUp,
   login,
   forgotPassword,
+  resetPassword,
   getCurrentUser,
   logout
 } from '../controllers/authController.js';
@@ -13,7 +14,8 @@ import { uploadProfilePhoto } from '../middleware/upload.js';
 import {
   signUpValidation,
   loginValidation,
-  forgotPasswordValidation
+  forgotPasswordValidation,
+  resetPasswordValidation
 } from '../validation/authValidation.js';
 
 const router = express.Router();
@@ -23,6 +25,7 @@ router.post('/signup/validate-step', validateSignupStep);
 router.post('/signup', uploadProfilePhoto.single('profilePhoto'), validateRequest(signUpValidation), signUp);
 router.post('/login', validateRequest(loginValidation), login);
 router.post('/forgot-password', validateRequest(forgotPasswordValidation), forgotPassword);
+router.post('/reset-password', validateRequest(resetPasswordValidation), resetPassword);
 
 // Protected routes
 router.get('/me', authMiddleware, getCurrentUser);

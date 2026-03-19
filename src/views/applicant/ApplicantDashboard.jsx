@@ -178,3 +178,4 @@ const ApplicantDashboard = () => {
 };
 
 export default ApplicantDashboard;
+

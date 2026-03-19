@@ -1,20 +1,24 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import LoginPage from "./pages/auth/LoginPage";
-import SignupPage from "./pages/auth/SignupPage";
-import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
-import AdminDashboard from "./pages/dashboard/AdminDashboard";
-import StaffDashboard from "./pages/dashboard/StaffDashboard";
-import ScholarDashboard from "./pages/dashboard/ScholarDashboard";
-import ApplicantDashboard from "./pages/dashboard/ApplicantDashboard";
+import HomePage from "./views/HomePage";
+import LoginPage from "./views/auth/LoginPage";
+import SignupPage from "./views/auth/SignupPage";
+import ForgotPasswordPage from "./views/auth/ForgotPasswordPage";
+import ResetPasswordPage from "./views/auth/ResetPasswordPage";
+import AdminDashboard from "./views/admin/AdminDashboard";
+import StaffDashboard from "./views/staff/StaffDashboard";
+import ScholarDashboard from "./views/scholar/ScholarDashboard";
+import ApplicantDashboard from "./views/applicant/ApplicantDashboard";
 import PrivateRoute from "./components/layout/PrivateRoute";
 
 function App() {
   return (
     <Routes>
       {/* Public */}
-      <Route path="/" element={<LoginPage />} />
+      <Route path="/" element={<HomePage />} />
+      <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       {/* Protected — Admin */}
       <Route

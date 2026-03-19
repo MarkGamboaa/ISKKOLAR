@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
-const Navbar = ({ onLoginClick, onRegisterClick }) => {
+const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isAuthenticated, user, logout, getRoleDashboard } = useAuth();
+  const navigate = useNavigate();
 
   const scrollTo = (id) => {
     setMobileMenuOpen(false);
@@ -66,13 +68,13 @@ const Navbar = ({ onLoginClick, onRegisterClick }) => {
             ) : (
               <>
                 <button
-                  onClick={onLoginClick}
+                  onClick={() => navigate("/login")}
                   className="px-4 py-2 text-sm font-medium text-primary hover:bg-primary/5 rounded-lg transition-colors"
                 >
                   Login
                 </button>
                 <button
-                  onClick={onRegisterClick}
+                  onClick={() => navigate("/signup")}
                   className="px-5 py-2 text-sm font-medium text-white bg-primary hover:bg-primary-light rounded-lg transition-colors shadow-sm hover:shadow-md"
                 >
                   Apply Now
@@ -132,13 +134,13 @@ const Navbar = ({ onLoginClick, onRegisterClick }) => {
             ) : (
               <>
                 <button
-                  onClick={() => { onLoginClick(); setMobileMenuOpen(false); }}
+                  onClick={() => { navigate("/login"); setMobileMenuOpen(false); }}
                   className="block w-full text-left px-4 py-2.5 text-sm font-medium text-primary hover:bg-primary/5 rounded-lg"
                 >
                   Login
                 </button>
                 <button
-                  onClick={() => { onRegisterClick(); setMobileMenuOpen(false); }}
+                  onClick={() => { navigate("/signup"); setMobileMenuOpen(false); }}
                   className="block w-full text-center px-4 py-2.5 text-sm font-medium text-white bg-primary hover:bg-primary-light rounded-lg"
                 >
                   Apply Now

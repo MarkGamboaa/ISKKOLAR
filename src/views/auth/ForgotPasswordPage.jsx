@@ -28,12 +28,6 @@ const ForgotPasswordPage = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f5f5f5] p-5">
       <div className="bg-white rounded-2xl p-10 max-w-[420px] w-full shadow-[0_4px_20px_rgba(0,0,0,0.08)]">
-        <Link to="/" className="flex items-center gap-1.5 text-[#5b5f97] text-sm no-underline mb-5 hover:underline">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-4 h-4">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-          </svg>
-          Back to Login
-        </Link>
 
         {success ? (
           <div className="text-center">
@@ -74,3 +68,4 @@ const ForgotPasswordPage = () => {
 };
 
 export default ForgotPasswordPage;
+

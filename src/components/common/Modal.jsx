@@ -47,7 +47,7 @@ const Modal = ({ isOpen, onClose, title, children, size = "md", preventBackdropC
       // Focus the modal
       setTimeout(() => {
         const firstFocusable = modalRef.current?.querySelector(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          'input, select, textarea, button, [href], [tabindex]:not([tabindex="-1"])'
         );
         firstFocusable?.focus();
       }, 100);

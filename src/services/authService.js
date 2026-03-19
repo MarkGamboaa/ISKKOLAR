@@ -142,6 +142,26 @@ export const forgotPassword = async (email) => {
   }
 };
 
+// Reset Password (via recovery access_token)
+export const resetPassword = async (accessToken, password) => {
+  try {
+    const response = await api.post("/auth/reset-password", {
+      accessToken,
+      password,
+    });
+
+    if (response.data.success) {
+      return { message: response.data.message || "Password updated successfully." };
+    }
+
+    throw new Error(response.data.message || "Failed to reset password.");
+  } catch (error) {
+    throw new Error(
+      error.response?.data?.message || "Failed to reset password."
+    );
+  }
+};
+
 // Get Current User
 export const getCurrentUser = async (token) => {
   try {

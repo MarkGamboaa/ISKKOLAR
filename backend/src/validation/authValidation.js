@@ -137,6 +137,14 @@ export const forgotPasswordValidation = Joi.object({
   email: emailField()
 });
 
+export const resetPasswordValidation = Joi.object({
+  accessToken: Joi.string().required().messages({
+    'string.empty': 'Access token is required',
+    'any.required': 'Access token is required'
+  }),
+  password: passwordField('Password must be at least 8 characters long')
+});
+
 export const updateProfileValidation = Joi.object({
   firstName: Joi.string(),
   lastName: Joi.string(),

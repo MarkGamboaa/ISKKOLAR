@@ -476,3 +476,40 @@ export const forgotPassword = async (req, res) => {
     });
   }
 };
+
+// Reset password (from recovery link)
+export const resetPassword = async (req, res) => {
+  try {
+    const { accessToken, password } = req.body;
+
+    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(accessToken);
+    if (userError || !userData?.user?.id) {
+      return res.status(400).json({
+        success: false,
+        message: userError?.message || 'Invalid or expired reset token'
+      });
+    }
+
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userData.user.id, {
+      password
+    });
+
+    if (updateError) {
+      return res.status(400).json({
+        success: false,
+        message: updateError.message || 'Failed to update password'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Password updated successfully'
+    });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};

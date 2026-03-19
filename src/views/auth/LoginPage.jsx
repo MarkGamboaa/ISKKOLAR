@@ -1,15 +1,34 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import kkfiLogo from "../../assets/KKFI LOGO.png";
 
+const parseHashParams = (hash) => {
+  const raw = (hash || "").replace(/^#/, "");
+  const params = new URLSearchParams(raw);
+  return {
+    accessToken: params.get("access_token") || "",
+    type: params.get("type") || "",
+  };
+};
+
 const LoginPage = () => {
   const { login } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [form, setForm] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  const hashInfo = useMemo(() => parseHashParams(location.hash), [location.hash]);
+
+  useEffect(() => {
+    if (hashInfo.type === "recovery" && hashInfo.accessToken) {
+      navigate(`/reset-password${location.hash}`, { replace: true });
+    }
+  }, [hashInfo.accessToken, hashInfo.type, location.hash, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -34,7 +53,7 @@ const LoginPage = () => {
   return (
     <div className="flex min-h-screen bg-[#f5f5f5]">
       {/* Left Side - Branding */}
-      <div className="flex-[1] flex flex-col justify-center items-center p-[60px] bg-[#f5f5f5] max-w-[57%]">
+      <div className="flex-1 flex flex-col justify-center items-center p-[60px] bg-[#f5f5f5] max-w-[57%]">
         <div className="mb-4">
           <img src={kkfiLogo} alt="KKFI Logo" className="w-[180px] h-[180px] rounded-full object-cover" />
         </div>
@@ -52,7 +71,7 @@ const LoginPage = () => {
           <p className="text-[#888] text-sm mb-[30px]">Please enter your details to sign in</p>
 
           {apiError && (
-            <div className="py-3 px-4 bg-[#fee2e2] text-[#dc2626] rounded-lg text-sm mb-5">{apiError}</div>
+            <div className="py-3 px-4 bg-danger-light text-danger rounded-lg text-sm mb-5">{apiError}</div>
           )}
 
           <form onSubmit={handleSubmit}>
@@ -64,7 +83,7 @@ const LoginPage = () => {
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                   placeholder="Enter your email"
-                  className={`w-full py-3 pr-10 pl-3.5 border rounded-lg text-sm outline-none box-border transition-colors duration-200 focus:border-[#5b5f97] ${errors.email ? 'border-[#dc2626]' : 'border-[#e0e0e0]'}`}
+                  className={`w-full py-3 pr-10 pl-3.5 border rounded-lg text-sm outline-none box-border transition-colors duration-200 focus:border-primary ${errors.email ? 'border-[#dc2626]' : 'border-[#e0e0e0]'}`}
                 />
                 <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#999] cursor-pointer">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-[18px] h-[18px]">
@@ -83,7 +102,7 @@ const LoginPage = () => {
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
                   placeholder="Enter your password"
-                  className={`w-full py-3 pr-10 pl-3.5 border rounded-lg text-sm outline-none box-border transition-colors duration-200 focus:border-[#5b5f97] ${errors.password ? 'border-[#dc2626]' : 'border-[#e0e0e0]'}`}
+                  className={`w-full py-3 pr-10 pl-3.5 border rounded-lg text-sm outline-none box-border transition-colors duration-200 focus:border-primary ${errors.password ? 'border-[#dc2626]' : 'border-[#e0e0e0]'}`}
                 />
                 <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#999] cursor-pointer hover:text-gray-700" onClick={() => setShowPassword(!showPassword)}>
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-[18px] h-[18px]">
@@ -105,17 +124,17 @@ const LoginPage = () => {
 
             <div className="flex justify-between items-center my-5">
               <label className="flex items-center gap-2 text-[#666] text-sm cursor-pointer">
-                <input type="checkbox" defaultChecked className="w-4 h-4 accent-[#5b5f97]" /> Remember Me
+                <input type="checkbox" defaultChecked className="w-4 h-4 accent-primary" /> Remember Me
               </label>
-              <Link to="/forgot-password" className="text-[#5b5f97] no-underline text-sm hover:underline">Forgot Password?</Link>
+              <Link to="/forgot-password" className="text-primary no-underline text-sm hover:underline">Forgot Password?</Link>
             </div>
 
-            <button type="submit" disabled={loading} className={`w-full p-[14px] bg-[#5b5f97] text-white border-none rounded-lg text-[15px] font-semibold cursor-pointer text-center transition-background duration-200 hover:bg-[#4a4e7d] ${loading ? 'opacity-70' : 'opacity-100'}`}>
+            <button type="submit" disabled={loading} className={`w-full p-[14px] bg-primary text-white border-none rounded-lg text-[15px] font-semibold cursor-pointer text-center transition-background duration-200 hover:bg-primary-dark ${loading ? 'opacity-70' : 'opacity-100'}`}>
               {loading ? "Logging in..." : "Login"}
             </button>
 
             <p className="text-center mt-5 text-sm text-[#666]">
-              Don't have an account? <Link to="/signup" className="text-[#5b5f97] no-underline font-medium hover:underline">Create Account</Link>
+              Don't have an account? <Link to="/signup" className="text-primary no-underline font-medium hover:underline">Create Account</Link>
             </p>
           </form>
         </div>
@@ -125,3 +144,4 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
+
