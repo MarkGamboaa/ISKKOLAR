@@ -55,11 +55,16 @@ const docFileFilter = (req, file, cb) => {
   cb(null, true);
 };
 
-export const uploadTertiaryDocs = multer({
-  storage,
-  limits: { fileSize: MAX_DOC_FILE_SIZE },
-  fileFilter: docFileFilter,
-}).fields([
+// Generic scholarship doc uploader factory
+const createScholarshipDocUploader = (fields) => {
+  return multer({
+    storage,
+    limits: { fileSize: MAX_DOC_FILE_SIZE },
+    fileFilter: docFileFilter,
+  }).fields(fields);
+};
+
+export const uploadTertiaryDocs = createScholarshipDocUploader([
   { name: 'grade_report', maxCount: 1 },
   { name: 'cor', maxCount: 1 },
   { name: 'current_term_report', maxCount: 1 },
@@ -68,5 +73,16 @@ export const uploadTertiaryDocs = multer({
   { name: 'income_cert_father', maxCount: 1 },
   { name: 'income_cert_mother', maxCount: 1 },
   { name: 'essay', maxCount: 1 },
-  { name: 'recommendation_letter', maxCount: 1 }, // optional
+  { name: 'recommendation_letter', maxCount: 1 },
+]);
+
+export const uploadVocationalDocs = createScholarshipDocUploader([
+  { name: 'grade_report', maxCount: 1 },
+  { name: 'cor', maxCount: 1 },
+  { name: 'certificate_of_indigency', maxCount: 1 },
+  { name: 'birth_certificate', maxCount: 1 },
+  { name: 'income_cert_father', maxCount: 1 },
+  { name: 'income_cert_mother', maxCount: 1 },
+  { name: 'essay', maxCount: 1 },
+  { name: 'recommendation_letter', maxCount: 1 },
 ]);

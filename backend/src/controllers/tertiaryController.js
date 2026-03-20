@@ -1,35 +1,10 @@
 import { supabaseAdmin as supabase } from '../config/supabase.js';
-import { uploadDocument } from '../services/storageServices.js';
 import {
   REQUIRED_DOCUMENT_TYPES,
   OPTIONAL_DOCUMENT_TYPES,
+  checkOngoingApplication,
 } from '../validation/scholarshipValidation.js';
-
-// ─── Helper: upload all docs and build insert rows ───────────
-const uploadAllDocuments = async (uploadedFiles, applicationId) => {
-  const allDocTypes = [...REQUIRED_DOCUMENT_TYPES, ...OPTIONAL_DOCUMENT_TYPES];
-  const inserts = [];
-
-  for (const docType of allDocTypes) {
-    const fileArr = uploadedFiles[docType];
-    if (!fileArr || !fileArr[0]) continue;
-
-    const file = fileArr[0];
-    const filePath = await uploadDocument(file, applicationId, docType);
-
-    inserts.push({
-      application_id: applicationId,
-      document_type: docType,
-      file_path: filePath,
-      file_name: file.originalname,
-      file_size: file.size,
-      mime_type: file.mimetype,
-      is_required: REQUIRED_DOCUMENT_TYPES.includes(docType),
-    });
-  }
-
-  return inserts;
-};
+import { uploadAllDocuments } from '../services/applicationServices.js';
 
 // ────────────────────────────────────────────────────────────
 // POST /api/scholarships/tertiary/validate-step?step=1|2|3
@@ -49,6 +24,24 @@ export const submitTertiaryApplication = async (req, res) => {
     return res.status(401).json({
       success: false,
       message: 'Unauthorized request',
+    });
+  }
+
+  // Check for ongoing applications
+  try {
+    const ongoingApp = await checkOngoingApplication(supabase, userId);
+    if (ongoingApp) {
+      return res.status(400).json({
+        success: false,
+        message: `You already have an ongoing ${ongoingApp.application_type} scholarship application in ${ongoingApp.status} status. Complete or withdraw it before applying for a new one.`,
+        existingApplication: ongoingApp,
+      });
+    }
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      stage: 'check_ongoing_application',
+      message: err.message,
     });
   }
 
@@ -140,7 +133,12 @@ export const submitTertiaryApplication = async (req, res) => {
 
     failureStage = 'upload_and_insert_documents';
     // 7. Upload docs to storage + insert records
-    const docInserts = await uploadAllDocuments(uploadedFiles, applicationId);
+    const docInserts = await uploadAllDocuments(
+      uploadedFiles,
+      applicationId,
+      REQUIRED_DOCUMENT_TYPES,
+      OPTIONAL_DOCUMENT_TYPES
+    );
     const { error: docError } = await supabase
       .from('application_documents')
       .insert(docInserts);
