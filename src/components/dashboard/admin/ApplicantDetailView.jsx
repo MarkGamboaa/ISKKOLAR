@@ -69,8 +69,6 @@ const ApplicantDetailView = ({ applicant, onBack }) => {
     ? new Date(application.submittedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
     : null;
 
-  const documentList = Array.isArray(application?.documents) ? application.documents : [];
-
   return (
     <div className="min-h-screen bg-[#f8f9fc]">
       {/* Header */}
@@ -450,28 +448,7 @@ const ApplicantDetailView = ({ applicant, onBack }) => {
           </div>
         )}
 
-        {/* Old Documents Section - Kept for compatibility */}
-        {documentList.length > 0 && (
-          <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-6">Submitted Documents</h2>
-            <div className="grid grid-cols-2 gap-4">
-              {documentList.map((doc, idx) => (
-                <div
-                  key={idx}
-                  className="p-4 border border-gray-200 rounded-lg flex items-center justify-between hover:border-primary hover:bg-primary/5 transition-all"
-                >
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{doc.name || doc.document_type || `Document ${idx + 1}`}</p>
-                    <p className="text-xs text-green-600 mt-1">Submitted</p>
-                  </div>
-                  <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+
 
         {/* Action Buttons */}
         <div className="flex gap-3 mb-8">
