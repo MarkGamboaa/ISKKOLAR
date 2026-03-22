@@ -557,15 +557,19 @@ export const getApplicantDetails = async (req, res) => {
           .eq('application_id', app.id);
 
         if (!docError && docData && docData.length > 0) {
-          documents = docData.map(doc => ({
-            id: doc.id,
-            documentType: doc.document_type,
-            fileName: doc.file_name,
-            filePath: doc.file_path,
-            fileSize: doc.file_size,
-            mimeType: doc.mime_type,
-            uploadedAt: doc.uploaded_at,
-            isRequired: doc.is_required
+          documents = await Promise.all(docData.map(async (doc) => {
+            const { data: signedData } = await supabaseAdmin.storage.from('scholarship-documents').createSignedUrl(doc.file_path, 60 * 60, { download: false });
+            return {
+              id: doc.id,
+              documentType: doc.document_type,
+              fileName: doc.file_name,
+              filePath: doc.file_path,
+              fileUrl: signedData?.signedUrl || doc.file_path,
+              fileSize: doc.file_size,
+              mimeType: doc.mime_type,
+              uploadedAt: doc.uploaded_at,
+              isRequired: doc.is_required
+            };
           }));
         }
 
