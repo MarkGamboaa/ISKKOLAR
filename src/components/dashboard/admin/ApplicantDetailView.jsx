@@ -423,13 +423,13 @@ const ApplicantDetailView = ({ applicant, onBack }) => {
                   className="p-4 border border-gray-200 rounded-lg flex items-center justify-between hover:border-primary hover:bg-primary/5 transition-all"
                 >
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{doc.fileName || doc.documentType || `Document ${idx + 1}`}</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {doc.fileSize ? `${(doc.fileSize / 1024).toFixed(2)} KB` : "—"}
-                    </p>
-                    <p className="text-xs text-green-600 mt-1">
-                      {doc.isRequired ? "Required" : "Optional"} • Submitted
-                    </p>
+                    <p className="text-sm font-bold text-gray-900 capitalize">{doc.documentType?.replace(/_/g, ' ') || `Document ${idx + 1}`}</p>
+                    <p className="text-xs text-gray-500 mt-1 truncate max-w-[200px]" title={doc.fileName}>{doc.fileName}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-xs text-gray-500">{doc.fileSize ? `${(doc.fileSize / 1024).toFixed(2)} KB` : "—"}</span>
+                      <span className="text-xs text-gray-300">•</span>
+                      <span className="text-xs text-green-600 font-medium">{doc.isRequired ? "Required" : "Optional"}</span>
+                    </div>
                   </div>
                   {(doc.fileUrl || doc.filePath) && (
                     <button
@@ -484,6 +484,7 @@ const ApplicantDetailView = ({ applicant, onBack }) => {
         onClose={() => setSelectedDocument(null)}
         documentUrl={selectedDocument?.fileUrl || selectedDocument?.filePath}
         fileName={selectedDocument?.fileName || 'Document'}
+        documentType={selectedDocument?.documentType}
         mimeType={selectedDocument?.mimeType}
       />
     </div>

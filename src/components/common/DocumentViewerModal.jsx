@@ -2,7 +2,7 @@ import React from "react";
 import Modal from "./Modal";
 import Button from "./Button";
 
-const DocumentViewerModal = ({ isOpen, onClose, documentUrl, fileName, mimeType }) => {
+const DocumentViewerModal = ({ isOpen, onClose, documentUrl, fileName, documentType, mimeType }) => {
   if (!documentUrl) return null;
 
   const isDocx = mimeType?.includes('wordprocessingml') || fileName?.match(/\.(doc|docx)$/i);
@@ -15,8 +15,14 @@ const DocumentViewerModal = ({ isOpen, onClose, documentUrl, fileName, mimeType 
     viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(documentUrl)}&embedded=true`;
   }
 
+  const formattedType = documentType 
+    ? documentType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+    : 'Document';
+    
+  const modalTitle = fileName ? `${formattedType} - ${fileName}` : formattedType;
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={fileName || 'Document Viewer'} size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title={modalTitle} size="lg">
       <div className="flex justify-center items-center bg-gray-50 rounded-lg overflow-hidden min-h-[60vh] relative">
         <iframe src={viewerUrl} title={fileName} className="w-full h-[70vh] border-0 bg-white" />
       </div>
