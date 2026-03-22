@@ -54,8 +54,7 @@ const ApplicantDetailView = ({ applicant, onBack }) => {
   const application = detailedData.applications?.[0];
 
   const statusVariantMap = {
-    pending: "default",
-    "for review": "warning",
+    pending: "warning",
     approved: "success",
     rejected: "danger",
   };

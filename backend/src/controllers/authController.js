@@ -755,8 +755,8 @@ export const getApplicants = async (req, res) => {
       email: applicant.email,
       profilePictureUrl: applicant.profile_picture_url,
       createdAt: applicant.created_at,
-      // Status is 'for review' if they have an application, 'pending' if not
-      applicationStatus: applicantApplicationMap[applicant.id] ? 'for review' : 'pending',
+      // Use the actual application status from the database, or null if none exists
+      applicationStatus: applicantApplicationMap[applicant.id]?.status || null,
       // Application submission date (only populated if they have an application)
       applicationSubmittedAt: applicantApplicationMap[applicant.id]?.submittedAt || null
     }));
