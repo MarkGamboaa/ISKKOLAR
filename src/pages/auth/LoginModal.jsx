@@ -25,6 +25,16 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister, onSwitchToForgotPassw
     setErrors((prev) => ({ ...prev, [field]: errs[field] || undefined }));
   };
 
+  const handleChange = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
+    if (apiError) {
+      setApiError("");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validate();
@@ -69,7 +79,7 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister, onSwitchToForgotPassw
           name="login-email"
           type="email"
           value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
+          onChange={(e) => handleChange("email", e.target.value)}
           onBlur={() => handleBlur("email")}
           error={errors.email}
           placeholder="Enter your email"
@@ -85,7 +95,7 @@ const LoginModal = ({ isOpen, onClose, onSwitchToRegister, onSwitchToForgotPassw
           label="Password"
           name="login-password"
           value={form.password}
-          onChange={(e) => setForm({ ...form, password: e.target.value })}
+          onChange={(e) => handleChange("password", e.target.value)}
           onBlur={() => handleBlur("password")}
           error={errors.password}
           placeholder="Enter your password"

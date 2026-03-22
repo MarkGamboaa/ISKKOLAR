@@ -1,11 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
 import * as authService from "../../services/authService";
 
 const SignupPage = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
@@ -123,6 +121,11 @@ const SignupPage = () => {
   };
 
   const handleNext = async () => {
+    // Only validate for steps 1-3, step 4 is the review page with no validation
+    if (step >= 4) {
+      return;
+    }
+
     try {
       await authService.validateSignupStep(step, form);
     } catch (error) {
@@ -166,10 +169,11 @@ const SignupPage = () => {
     setErrors({});
     try {
       await authService.register({ ...form, userType: "applicant" });
-      await login(form.email, form.password);
+      setSuccess(true);
     } catch (err) {
       setErrors(mapServerErrors(err));
       setApiError(err.message || "Failed to create account. Please try again.");
+    } finally {
       setLoading(false);
     }
   };

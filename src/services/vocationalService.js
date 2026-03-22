@@ -1,4 +1,5 @@
 import api from './api';
+import { getMyTertiaryApplications } from './tertiaryService';
 
 const appendPayload = (formData, payload) => {
   Object.entries(payload).forEach(([key, value]) => {
@@ -30,7 +31,7 @@ const normalizeApiError = (error, fallbackMessage) => {
   );
 };
 
-export const validateTertiaryStep = async (step, payload, files = {}) => {
+export const validateVocationalStep = async (step, payload, files = {}) => {
   try {
     const formData = new FormData();
     appendPayload(formData, payload);
@@ -39,7 +40,7 @@ export const validateTertiaryStep = async (step, payload, files = {}) => {
       appendFiles(formData, files);
     }
 
-    const response = await api.post(`/scholarships/tertiary/validate-step?step=${step}`, formData, {
+    const response = await api.post(`/scholarships/vocational/validate-step?step=${step}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
 
@@ -49,13 +50,13 @@ export const validateTertiaryStep = async (step, payload, files = {}) => {
   }
 };
 
-export const submitTertiaryApplication = async (payload, files) => {
+export const submitVocationalApplication = async (payload, files) => {
   try {
     const formData = new FormData();
     appendPayload(formData, payload);
     appendFiles(formData, files);
 
-    const response = await api.post('/scholarships/tertiary/apply', formData, {
+    const response = await api.post('/scholarships/vocational/apply', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
 
@@ -68,24 +69,35 @@ export const submitTertiaryApplication = async (payload, files) => {
 
     return response.data;
   } catch (error) {
-    throw normalizeApiError(error, 'Failed to submit tertiary scholarship application.');
+    throw normalizeApiError(error, 'Failed to submit vocational scholarship application.');
   }
 };
 
-export const getMyTertiaryApplications = async () => {
+export const getMyVocationalApplications = async () => {
   try {
-    const response = await api.get('/scholarships/tertiary/my-applications');
+    const response = await api.get('/scholarships/vocational/my-applications');
     return response.data?.data || [];
   } catch (error) {
-    throw normalizeApiError(error, 'Failed to load tertiary applications.');
+    throw normalizeApiError(error, 'Failed to load vocational applications.');
   }
 };
 
-export const getTertiaryApplicationById = async (id) => {
-  try {
-    const response = await api.get(`/scholarships/tertiary/${id}`);
-    return response.data?.data || null;
-  } catch (error) {
-    throw normalizeApiError(error, 'Failed to load application details.');
-  }
+export const hasOngoingScholarshipApplication = async () => {
+  const [tertiaryResult, vocationalResult] = await Promise.allSettled([
+    getMyTertiaryApplications(),
+    getMyVocationalApplications(),
+  ]);
+
+  const tertiaryApps = tertiaryResult.status === 'fulfilled' ? tertiaryResult.value : [];
+  const vocationalApps = vocationalResult.status === 'fulfilled' ? vocationalResult.value : [];
+  const allApplications = [...tertiaryApps, ...vocationalApps];
+
+  const ongoing = allApplications.find((app) =>
+    ['pending', 'under_review'].includes(String(app?.status || '').toLowerCase())
+  );
+
+  return {
+    hasOngoing: Boolean(ongoing),
+    ongoingApplication: ongoing || null,
+  };
 };

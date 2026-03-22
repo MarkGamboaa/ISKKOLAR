@@ -1,5 +1,13 @@
 import api from "./api";
 
+const createAuthError = (message, code) => {
+  const err = new Error(message);
+  if (code) {
+    err.code = code;
+  }
+  return err;
+};
+
 const serializeProfilePhoto = (profilePhoto) => {
   if (!(profilePhoto instanceof File)) {
     return profilePhoto || null;
@@ -58,15 +66,29 @@ export const login = async (email, password) => {
       };
     }
   } catch (error) {
-    if (error.response?.status === 403 && error.response?.data?.code === "EMAIL_NOT_VERIFIED") {
-      throw new Error("Please verify your email first. Check your inbox for the verification link.");
-    }
-    if (error.response?.status === 403 && error.response?.data?.code === "ACCOUNT_INACTIVE") {
-      throw new Error("Your account is inactive. Please contact support.");
+    const status = error.response?.status;
+    const code = error.response?.data?.code;
+    const backendMessage = error.response?.data?.message || "";
+    const normalizedMessage = String(backendMessage).toLowerCase();
+
+    const isEmailNotVerified =
+      (status === 403 && code === "EMAIL_NOT_VERIFIED") ||
+      (status === 403 && normalizedMessage.includes("verify your email"));
+
+    if (isEmailNotVerified) {
+      throw createAuthError(
+        "Please verify your email first. Check your inbox for the verification link.",
+        "EMAIL_NOT_VERIFIED"
+      );
     }
 
-    throw new Error(
-      error.response?.data?.message || "Invalid credentials. Please check your email and password."
+    if (status === 403 && code === "ACCOUNT_INACTIVE") {
+      throw createAuthError("Your account is inactive. Please contact support.", "ACCOUNT_INACTIVE");
+    }
+
+    throw createAuthError(
+      error.response?.data?.message || "Invalid credentials. Please check your email and password.",
+      code || "LOGIN_FAILED"
     );
   }
 };

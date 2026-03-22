@@ -11,11 +11,12 @@ import {
 
 const storage = multer.memoryStorage();
 
-const ALLOWED_DOC_EXTENSIONS = new Set(['.pdf', '.jpg', '.jpeg', '.png']);
+const ALLOWED_DOC_EXTENSIONS = new Set(['.pdf', '.doc', '.docx']);
 const ALLOWED_DOC_MIME_TYPES_SET = new Set([
   ...ALLOWED_DOC_MIME_TYPES,
   'application/x-pdf',
   'application/acrobat',
+  'application/vnd.ms-word',
 ]);
 
 const fileFilter = (req, file, cb) => {
@@ -46,7 +47,7 @@ const docFileFilter = (req, file, cb) => {
   if (!validByMime && !validByExt) {
     return cb(
       new Error(
-        `Invalid file type for ${file.fieldname}: received "${file.mimetype || 'unknown'}". Allowed formats are PDF (.pdf), JPEG (.jpg/.jpeg), and PNG (.png).`
+        `Invalid file type for ${file.fieldname}: Only PDF, DOC, or DOCX files are allowed.`
       )
     );
   }
@@ -54,11 +55,16 @@ const docFileFilter = (req, file, cb) => {
   cb(null, true);
 };
 
-export const uploadTertiaryDocs = multer({
-  storage,
-  limits: { fileSize: MAX_DOC_FILE_SIZE },
-  fileFilter: docFileFilter,
-}).fields([
+// Generic scholarship doc uploader factory
+const createScholarshipDocUploader = (fields) => {
+  return multer({
+    storage,
+    limits: { fileSize: MAX_DOC_FILE_SIZE },
+    fileFilter: docFileFilter,
+  }).fields(fields);
+};
+
+export const uploadTertiaryDocs = createScholarshipDocUploader([
   { name: 'grade_report', maxCount: 1 },
   { name: 'cor', maxCount: 1 },
   { name: 'current_term_report', maxCount: 1 },
@@ -67,5 +73,16 @@ export const uploadTertiaryDocs = multer({
   { name: 'income_cert_father', maxCount: 1 },
   { name: 'income_cert_mother', maxCount: 1 },
   { name: 'essay', maxCount: 1 },
-  { name: 'recommendation_letter', maxCount: 1 }, // optional
+  { name: 'recommendation_letter', maxCount: 1 },
+]);
+
+export const uploadVocationalDocs = createScholarshipDocUploader([
+  { name: 'grade_report', maxCount: 1 },
+  { name: 'cor', maxCount: 1 },
+  { name: 'certificate_of_indigency', maxCount: 1 },
+  { name: 'birth_certificate', maxCount: 1 },
+  { name: 'income_cert_father', maxCount: 1 },
+  { name: 'income_cert_mother', maxCount: 1 },
+  { name: 'essay', maxCount: 1 },
+  { name: 'recommendation_letter', maxCount: 1 },
 ]);

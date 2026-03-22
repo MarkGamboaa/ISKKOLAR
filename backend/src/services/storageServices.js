@@ -1,18 +1,53 @@
 import { supabaseAdmin as supabase } from '../config/supabase.js';
 
 const SCHOLARSHIP_DOCS_BUCKET = 'scholarship-documents';
+const SCHOLARSHIP_ALLOWED_MIME_TYPES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+];
+
+const resolveContentType = (file) => {
+  const mime = (file.mimetype || '').toLowerCase();
+  const ext = (file.originalname?.split('.').pop() || '').toLowerCase();
+
+  if (mime === 'application/pdf' || mime === 'application/x-pdf' || mime === 'application/acrobat' || ext === 'pdf') {
+    return 'application/pdf';
+  }
+
+  if (mime === 'application/msword' || mime === 'application/vnd.ms-word' || ext === 'doc') {
+    return 'application/msword';
+  }
+
+  if (mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || ext === 'docx') {
+    return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  }
+
+  return file.mimetype;
+};
 
 const ensureDocsBucket = async () => {
   const { data: existingBucket, error: getBucketError } = await supabase.storage.getBucket(SCHOLARSHIP_DOCS_BUCKET);
 
   if (!getBucketError && existingBucket) {
+    // Keep bucket settings in sync so existing buckets also accept DOCX.
+    const { error: updateBucketError } = await supabase.storage.updateBucket(SCHOLARSHIP_DOCS_BUCKET, {
+      public: false,
+      fileSizeLimit: 10 * 1024 * 1024,
+      allowedMimeTypes: SCHOLARSHIP_ALLOWED_MIME_TYPES,
+    });
+
+    if (updateBucketError) {
+      throw new Error(`Storage bucket update failed: ${updateBucketError.message}`);
+    }
+
     return;
   }
 
   const { error: createBucketError } = await supabase.storage.createBucket(SCHOLARSHIP_DOCS_BUCKET, {
     public: false,
     fileSizeLimit: 10 * 1024 * 1024,
-    allowedMimeTypes: ['application/pdf', 'image/jpeg', 'image/png'],
+    allowedMimeTypes: SCHOLARSHIP_ALLOWED_MIME_TYPES,
   });
 
   if (createBucketError && !createBucketError.message?.toLowerCase().includes('already exists')) {
@@ -32,26 +67,15 @@ export const uploadDocument = async (file, applicationId, documentType) => {
 
   const ext = file.originalname.split('.').pop();
   const filePath = `applications/${applicationId}/${documentType}_${Date.now()}.${ext}`;
+  const contentType = resolveContentType(file);
 
   const { error } = await supabase.storage
     .from(SCHOLARSHIP_DOCS_BUCKET)
     .upload(filePath, file.buffer, {
-      contentType: file.mimetype,
+      contentType,
       upsert: false,
     });
 
   if (error) throw new Error(`Storage upload failed [${documentType}]: ${error.message}`);
   return filePath;
-};
-
-/**
- * Delete a file from Supabase Storage
- * @param {string} filePath
- */
-export const deleteDocument = async (filePath) => {
-  const { error } = await supabase.storage
-    .from(SCHOLARSHIP_DOCS_BUCKET)
-    .remove([filePath]);
-
-  if (error) throw new Error(`Storage delete failed: ${error.message}`);
 };

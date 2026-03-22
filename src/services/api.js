@@ -23,7 +23,14 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
+    const status = error.response?.status;
+    const requestUrl = error.config?.url || "";
+    const hasToken = !!localStorage.getItem("token");
+    const isAuthRequest = requestUrl.includes("/auth/login") ||
+      requestUrl.includes("/auth/signup") ||
+      requestUrl.includes("/auth/forgot-password");
+
+    if (status === 401 && hasToken && !isAuthRequest) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       window.location.href = "/";

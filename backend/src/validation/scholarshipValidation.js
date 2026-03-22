@@ -1,10 +1,10 @@
-import Joi from 'joi';
+import { z } from 'zod';
 
 // ─── Constants ───────────────────────────────────────────────
 export const ALLOWED_DOC_MIME_TYPES = [
   'application/pdf',
-  'image/jpeg',
-  'image/png',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ];
 export const MAX_DOC_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -22,119 +22,287 @@ export const REQUIRED_DOCUMENT_TYPES = [
 export const OPTIONAL_DOCUMENT_TYPES = ['recommendation_letter'];
 
 // ─── Reusable sub-schemas ─────────────────────────────────────
-const familyMemberSchema = Joi.object({
-  role: Joi.string().valid('father', 'mother', 'other').required(),
-  full_name: Joi.string().min(2).max(255).required(),
-  employment_status: Joi.string()
-    .valid('Employed', 'Unemployed', 'Self-Employed')
-    .required(),
-  occupation: Joi.string().max(255).allow('', null),
-  monthly_income: Joi.number().min(0).allow(null),
-});
-
-// ─── Step 1: Academic Information ────────────────────────────
-export const tertiaryStep1Validation = Joi.object({
-  // Scholarship info
-  scholarship_type: Joi.string()
-    .valid('Manila Scholars', 'Bulacan Scholars', 'Nationwide Scholars')
-    .required()
-    .messages({ 'any.only': 'Invalid scholarship type' }),
-
-  fund_type: Joi.string()
-    .valid('KKFI Funded', 'Partner Funded')
-    .required()
-    .messages({ 'any.only': 'Invalid fund type' }),
-
-  incoming_freshman: Joi.boolean().required().messages({
-    'any.required': 'Please specify if you are an incoming freshman',
-  }),
-
-  // Secondary education
-  secondary_school: Joi.string().min(2).max(255).required().messages({
-    'string.empty': 'Secondary school name is required',
-  }),
-  strand: Joi.string()
-    .valid('STEM', 'ABM', 'HUMSS', 'GAS', 'TVL')
-    .required()
-    .messages({ 'any.only': 'Invalid strand' }),
-  year_graduated: Joi.number()
-    .integer()
-    .min(1950)
-    .max(new Date().getFullYear())
-    .required()
-    .messages({ 'number.max': 'Year graduated cannot be in the future' }),
-
-  // Tertiary education
-  tertiary_school: Joi.string().min(2).max(255).required().messages({
-    'string.empty': 'Tertiary school name is required',
-  }),
-  program: Joi.string().min(2).max(255).required().messages({
-    'string.empty': 'Program is required',
-  }),
-  term_type: Joi.string()
-    .valid('Semester', 'Trimester', 'Quarter System')
-    .required(),
-  grade_scale: Joi.string()
-    .valid(
-      '1.0 - 5.00 Grading System',
-      '4.00 GPA System',
-      'Percentage System',
-      'Letter Grade System'
-    )
-    .required(),
-  year_level: Joi.string()
-    .valid('1st', '2nd', '3rd', '4th')
-    .required(),
-  term: Joi.string()
-    .valid('1st', '2nd', '3rd', '4th')
-    .required(),
-}).custom((value, helpers) => {
-  // cross-field: term options depend on term_type
-  const validTerms = {
-    Semester: ['1st', '2nd'],
-    Trimester: ['1st', '2nd', '3rd'],
-    'Quarter System': ['1st', '2nd', '3rd', '4th'],
-  };
-  if (!validTerms[value.term_type]?.includes(value.term)) {
-    return helpers.error('any.invalid', {
-      message: `Term "${value.term}" is not valid for ${value.term_type}`,
-    });
+const parseOptionalText = (value) => {
+  if (value === null || value === undefined) return undefined;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed === '' ? undefined : trimmed;
   }
   return value;
+};
+
+const parseOptionalNumber = (value) => {
+  if (value === '' || value === null || value === undefined) {
+    return undefined;
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return undefined;
+    }
+    const parsed = Number(trimmed);
+    return Number.isNaN(parsed) ? value : parsed;
+  }
+  return value;
+};
+
+// ─── SHARED FAMILY MEMBER SCHEMA (used by tertiary & vocational) ──
+export const familyMemberSchema = z.object({
+  role: z.enum(['father', 'mother', 'other'], {
+    message: 'Invalid role'
+  }),
+  full_name: z.string()
+    .min(1, 'Name is required')
+    .min(2, 'Name is too short')
+    .max(255, 'Name is too long'),
+  employment_status: z.enum(['Employed', 'Unemployed', 'Self-Employed', 'Deceased'], {
+    message: 'Invalid employment status'
+  }),
+  occupation: z.preprocess(
+    parseOptionalText,
+    z.string({ invalid_type_error: 'Occupation must be a valid text value' })
+      .min(2, 'Occupation is too short')
+      .max(255, 'Occupation is too long')
+      .optional()
+  ),
+  monthly_income: z.preprocess(
+    parseOptionalNumber,
+    z.number({ invalid_type_error: 'Monthly income must be a valid number' })
+      .min(0, 'Monthly income cannot be negative')
+      .optional()
+  )
+}).superRefine((data, ctx) => {
+  const requiresWorkInfo = ['Employed', 'Self-Employed'].includes(data.employment_status);
+  const shouldRemoveWorkInfo = ['Unemployed', 'Deceased'].includes(data.employment_status);
+
+  if (requiresWorkInfo && !data.occupation) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['occupation'],
+      message: 'Occupation is required'
+    });
+  }
+
+  if (requiresWorkInfo && data.monthly_income === undefined) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['monthly_income'],
+      message: 'Monthly income is required'
+    });
+  }
+
+  if (shouldRemoveWorkInfo && data.occupation !== undefined) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['occupation'],
+      message: 'Remove occupation when employment status is Unemployed or Deceased'
+    });
+  }
+
+  if (shouldRemoveWorkInfo && data.monthly_income !== undefined) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['monthly_income'],
+      message: 'Remove monthly income when employment status is Unemployed or Deceased'
+    });
+  }
 });
+
+const parseYearInput = (value) => {
+  if (value === '' || value === null || value === undefined) {
+    return undefined;
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return undefined;
+    }
+    const parsed = Number(trimmed);
+    return Number.isNaN(parsed) ? value : parsed;
+  }
+  return value;
+};
+
+// ─── Step 1: Academic Information ────────────────────────────
+export const tertiaryStep1Validation = z.object({
+  scholarship_type: z.string().optional(),
+  incoming_freshman: z.boolean({
+    message: 'Incoming freshman field must be true or false'
+  }),
+  secondary_school: z.string()
+    .min(1, 'Secondary school name is required')
+    .min(2, 'Secondary school name is too short')
+    .max(255, 'Secondary school name is too long'),
+  strand: z.string().min(1, 'Strand is required'),
+  year_graduated: z.preprocess(
+    parseYearInput,
+    z.number({
+      required_error: 'Year graduated is required',
+      invalid_type_error: 'Year graduated must be a valid year'
+    })
+    .int('Year graduated must be a whole year')
+    .min(1950, 'Year graduated must be after 1950')
+    .max(new Date().getFullYear(), 'Year graduated cannot be in the future')
+  ),
+  tertiary_school: z.string()
+    .min(1, 'Tertiary school name is required')
+    .min(2, 'Tertiary school name is too short')
+    .max(255, 'Tertiary school name is too long'),
+  program: z.string()
+    .min(1, 'Program is required')
+    .min(2, 'Program is too short')
+    .max(255, 'Program is too long'),
+  term_type: z.string().min(1, 'Term type is required'),
+  grade_scale: z.string().min(1, 'Grade scale is required'),
+  year_level: z.string().min(1, 'Year level is required'),
+  term: z.string().min(1, 'Term is required'),
+  expected_graduation_year: z.preprocess(
+    parseYearInput,
+    z.number({
+      required_error: 'Expected graduation year is required',
+      invalid_type_error: 'Expected graduation year must be a valid year'
+    })
+    .int('Expected graduation year must be a whole year')
+    .min(new Date().getFullYear(), `Expected graduation year must be ${new Date().getFullYear()} or later`)
+    .max(new Date().getFullYear() + 10, 'Expected graduation year seems too far in the future')
+  )
+}).refine(
+  (data) => {
+    // cross-field: term options depend on term_type
+    const validTerms = {
+      Semester: ['1st', '2nd'],
+      Trimester: ['1st', '2nd', '3rd'],
+      'Quarter System': ['1st', '2nd', '3rd', '4th'],
+    };
+    return validTerms[data.term_type]?.includes(data.term) ?? false;
+  },
+  {
+    message: (data) => ({
+      term: `Term "${data.term}" is not valid for ${data.term_type}`
+    })
+  }
+);
 
 // ─── Step 2: Family Information ───────────────────────────────
-export const tertiaryStep2Validation = Joi.object({
-  family_members: Joi.array()
-    .items(familyMemberSchema)
-    .min(2)
-    .required()
-    .custom((members, helpers) => {
-      const roles = members.map((m) => m.role);
-      if (!roles.includes('father'))
-        return helpers.error('any.invalid', {
-          message: "Father's information is required",
-        });
-      if (!roles.includes('mother'))
-        return helpers.error('any.invalid', {
-          message: "Mother's information is required",
-        });
-      return members;
-    })
-    .messages({
-      'array.min': 'At least father and mother information is required',
-    }),
+export const tertiaryStep2Validation = z.object({
+  family_members: z.array(familyMemberSchema)
+    .min(2, 'Add at least father and mother')
+    .refine(
+      (members) => members.some((m) => m.role === 'father'),
+      'Father info is required'
+    )
+    .refine(
+      (members) => members.some((m) => m.role === 'mother'),
+      'Mother info is required'
+    )
 });
 
-// ─── Step 3: handled in controller (file validation) ─────────
-
 // ─── Full submission: Step 1 + Step 2 combined ────────────────
-export const tertiarySubmitValidation = tertiaryStep1Validation.concat(
-  tertiaryStep2Validation
-);
+export const tertiarySubmitValidation = tertiaryStep1Validation.and(tertiaryStep2Validation);
 
 // ─── Step map for validate-step endpoint ─────────────────────
 export const TERTIARY_STEP_VALIDATORS = {
   1: tertiaryStep1Validation,
   2: tertiaryStep2Validation,
+};
+
+// ─── VOCATIONAL SCHOLARSHIP VALIDATION ────────────────────────
+
+// ─── Step 1: Academic Information (similar to tertiary) ────────
+export const vocationalStep1Validation = z.object({
+  scholarship_type: z.string().optional(),
+  secondary_school: z.string()
+    .min(1, 'Secondary school name is required')
+    .min(2, 'Secondary school name is too short')
+    .max(255, 'Secondary school name is too long'),
+  strand: z.string().min(1, 'Strand is required'),
+  year_graduated: z.preprocess(
+    parseYearInput,
+    z.number({
+      required_error: 'Year graduated is required',
+      invalid_type_error: 'Year graduated must be a valid year'
+    })
+    .int('Year graduated must be a whole year')
+    .min(1950, 'Year graduated must be after 1950')
+    .max(new Date().getFullYear(), 'Year graduated cannot be in the future')
+  ),
+  vocational_school: z.string()
+    .min(1, 'Vocational school name is required')
+    .min(2, 'Vocational school name is too short')
+    .max(255, 'Vocational school name is too long'),
+  vocational_program: z.string()
+    .min(1, 'Vocational program is required')
+    .min(2, 'Vocational program is too short')
+    .max(255, 'Vocational program is too long'),
+  course_duration: z.string()
+    .min(1, 'Course duration is required')
+    .min(2, 'Course duration is too short')
+    .max(50, 'Course duration is too long'),
+  completion_date: z.preprocess(
+    (value) => {
+      if (value === '' || value === null || value === undefined) {
+        return undefined;
+      }
+      return value;
+    },
+    z.string()
+      .refine(
+        (value) => !isNaN(Date.parse(value)),
+        'Completion date must be a valid date'
+      )
+  )
+});
+
+// ─── Step 2: Family Information (reuses familyMemberSchema) ────
+export const vocationalStep2Validation = z.object({
+  family_members: z.array(familyMemberSchema)
+    .min(2, 'Add at least father and mother')
+    .refine(
+      (members) => members.some((m) => m.role === 'father'),
+      'Father info is required'
+    )
+    .refine(
+      (members) => members.some((m) => m.role === 'mother'),
+      'Mother info is required'
+    )
+});
+
+// ─── Full submission: Step 1 + Step 2 combined ────────────────
+export const vocationalSubmitValidation = vocationalStep1Validation.and(vocationalStep2Validation);
+
+// ─── Step map for validate-step endpoint ─────────────────────
+export const VOCATIONAL_STEP_VALIDATORS = {
+  1: vocationalStep1Validation,
+  2: vocationalStep2Validation,
+};
+
+// ─── Vocational required documents (same as tertiary except no current_term_report) ────
+export const VOCATIONAL_REQUIRED_DOCUMENT_TYPES = [
+  'grade_report',
+  'cor',
+  'certificate_of_indigency',
+  'birth_certificate',
+  'income_cert_father',
+  'income_cert_mother',
+  'essay',
+];
+
+export const VOCATIONAL_OPTIONAL_DOCUMENT_TYPES = ['recommendation_letter'];
+
+// ─── ONGOING APPLICATION CHECK ────────────────────────────────
+export const checkOngoingApplication = async (supabase, userId) => {
+  const { data: ongoingApp, error } = await supabase
+    .from('applications')
+    .select('id, application_type, status')
+    .eq('user_id', userId)
+    .in('status', ['pending', 'under_review'])
+    .limit(1)
+    .single();
+
+  if (error && error.code !== 'PGRST116') {
+    // PGRST116 = no rows found, which is fine
+    throw new Error(error.message);
+  }
+
+  return ongoingApp;
 };

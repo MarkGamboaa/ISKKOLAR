@@ -1,8 +1,32 @@
+import { useEffect, useMemo, useState } from "react";
+import { getMyTertiaryApplications } from "../../../services/tertiaryService";
+
 const APPLICATION_STEPS = [
   { key: "submitted", label: "Submitted" },
   { key: "under_review", label: "Under Review" },
   { key: "approved", label: "Approved" },
 ];
+
+const STATUS_LABEL = {
+  pending: "submitted",
+  submitted: "submitted",
+  under_review: "under_review",
+  approved: "approved",
+  rejected: "submitted",
+};
+
+const TERTIARY_FALLBACK_IMAGE = "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=1200&auto=format&fit=crop";
+
+const formatDate = (value) => {
+  if (!value) return "--";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "--";
+  return date.toLocaleDateString("en-PH", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+};
 
 const ApplicationEmpty = ({ onBrowse }) => (
   <div className="flex flex-col items-center justify-center pt-16 pb-8">
@@ -25,7 +49,8 @@ const ApplicationEmpty = ({ onBrowse }) => (
 );
 
 const ApplicationCard = ({ application }) => {
-  const currentStepIndex = APPLICATION_STEPS.findIndex(s => s.key === application.status);
+  const isRejected = application.rawStatus === "rejected";
+  const currentStepIndex = APPLICATION_STEPS.findIndex((s) => s.key === application.status);
 
   return (
     <div className="bg-white rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.08)]">
@@ -48,8 +73,21 @@ const ApplicationCard = ({ application }) => {
 
       {/* Card Body */}
       <div className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <span
+            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+              isRejected ? "bg-red-100 text-red-700" : "bg-[#eef0fb] text-[#4f568e]"
+            }`}
+          >
+            {isRejected ? "Rejected" : application.rawStatus?.replace("_", " ") || "Submitted"}
+          </span>
+          <span className="text-xs text-gray-500">Submitted: {application.submittedAt}</span>
+        </div>
+
         <p className="text-gray-500 text-sm leading-relaxed mb-6">
-          Your scholarship application is currently in progress. Please wait for further updates.
+          {isRejected
+            ? "Your application was not approved. You may review your details and submit a new application if allowed."
+            : "Your scholarship application is currently in progress. Please wait for further updates."}
         </p>
 
         {/* Status Tracker */}
@@ -82,7 +120,7 @@ const ApplicationCard = ({ application }) => {
         {/* Progress Bar */}
         <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
           <div
-            className="h-full bg-[#5b5f97] rounded-full transition-all duration-500"
+            className={`h-full rounded-full transition-all duration-500 ${isRejected ? "bg-red-500" : "bg-[#5b5f97]"}`}
             style={{ width: `${((currentStepIndex + 1) / APPLICATION_STEPS.length) * 100}%` }}
           />
         </div>
@@ -92,10 +130,73 @@ const ApplicationCard = ({ application }) => {
 };
 
 const ApplicationTab = ({ onBrowse }) => {
-  // Mock data — replace with real data when backend is ready
-  const applications = [];
+  const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  if (applications.length === 0) {
+  useEffect(() => {
+    let mounted = true;
+
+    const loadApplications = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const data = await getMyTertiaryApplications();
+        if (!mounted) return;
+        setApplications(Array.isArray(data) ? data : []);
+      } catch (err) {
+        if (!mounted) return;
+        setError(err?.message || "Failed to load applications.");
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    loadApplications();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const mappedApplications = useMemo(() => {
+    return applications.map((app) => {
+      const details = Array.isArray(app.tertiary_application_details)
+        ? app.tertiary_application_details[0]
+        : app.tertiary_application_details;
+
+      const scholarshipType = details?.scholarship_type || "Tertiary Scholarship";
+      return {
+        id: app.id,
+        status: STATUS_LABEL[app.status] || "submitted",
+        rawStatus: app.status || "submitted",
+        title: scholarshipType,
+        tag: "Tertiary Program",
+        image: TERTIARY_FALLBACK_IMAGE,
+        submittedAt: formatDate(app.submitted_at || app.created_at),
+      };
+    });
+  }, [applications]);
+
+  if (loading) {
+    return <div className="text-center py-10 text-gray-500">Loading applications...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-10">
+        <p className="text-sm text-red-500 mb-4">{error}</p>
+        <button
+          onClick={onBrowse}
+          className="py-2.5 px-6 bg-[#5b5f97] text-white rounded-lg font-semibold hover:bg-[#4a4e7d] transition-colors"
+        >
+          Browse Scholarships
+        </button>
+      </div>
+    );
+  }
+
+  if (mappedApplications.length === 0) {
     return <ApplicationEmpty onBrowse={onBrowse} />;
   }
 
@@ -103,8 +204,8 @@ const ApplicationTab = ({ onBrowse }) => {
     <div className="max-w-2xl mx-auto">
       <h1 className="text-2xl font-extrabold text-[#4f568e] mb-6">My Applications</h1>
       <div className="space-y-4">
-        {applications.map((app, i) => (
-          <ApplicationCard key={i} application={app} />
+        {mappedApplications.map((app) => (
+          <ApplicationCard key={app.id} application={app} />
         ))}
       </div>
     </div>

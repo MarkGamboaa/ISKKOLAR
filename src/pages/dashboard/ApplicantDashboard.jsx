@@ -1,6 +1,9 @@
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import kkfiLogo from "../../assets/KKFI LOGO.png";
+import ErrorModal from "../../components/common/ErrorModal";
+import { hasOngoingScholarshipApplication } from "../../services/vocationalService";
 
 // Forms
 import TertiaryScholarshipForm from "../../components/forms/TertiaryScholarshipForm";
@@ -27,6 +30,7 @@ const ApplicantDashboard = () => {
   const programSlug = searchParams.get("program");
   const selectedProgram = programSlug ? PROGRAMS.find(p => p.slug === programSlug) || null : null;
   const isApplying = searchParams.get("view") === "apply" && selectedProgram !== null;
+  const [applyError, setApplyError] = useState("");
 
   const initials = user
     ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase()
@@ -40,20 +44,38 @@ const ApplicantDashboard = () => {
   ];
 
   const renderFormForProgram = () => {
+    const handleSubmitted = () => setSearchParams({ tab: "application" });
+
     switch (programSlug) {
       case "tertiary":
-        return <TertiaryScholarshipForm onBack={() => setSearchParams({ program: programSlug })} />;
+        return <TertiaryScholarshipForm onBack={() => setSearchParams({ program: programSlug })} onSubmitted={handleSubmitted} />;
       case "employee-child":
         return <StaffEducationalForm onBack={() => setSearchParams({ program: programSlug })} />;
       case "vocational":
-        return <VocationalScholarshipForm onBack={() => setSearchParams({ program: programSlug })} />;
+        return <VocationalScholarshipForm onBack={() => setSearchParams({ program: programSlug })} onSubmitted={handleSubmitted} />;
       default:
         return null;
     }
   };
 
   const renderDetailForProgram = () => {
-    const handleApply = () => setSearchParams({ program: programSlug, view: "apply" });
+    const handleApply = async () => {
+      try {
+        const { hasOngoing, ongoingApplication } = await hasOngoingScholarshipApplication();
+
+        if (hasOngoing) {
+          const applicationType = String(ongoingApplication?.application_type || "scholarship").replaceAll("_", " ");
+          const status = String(ongoingApplication?.status || "pending").replaceAll("_", " ");
+          setApplyError(`You already have an ongoing ${applicationType} application (${status}). Please wait until it is completed before applying again.`);
+          return;
+        }
+
+        setSearchParams({ program: programSlug, view: "apply" });
+      } catch {
+        setApplyError("Unable to check your current applications right now. Please try again.");
+      }
+    };
+
     switch (programSlug) {
       case "tertiary":
         return <TertiaryProgramDetail onApply={handleApply} />;
@@ -150,6 +172,13 @@ const ApplicantDashboard = () => {
           </div>
         )}
       </main>
+
+      <ErrorModal
+        isOpen={Boolean(applyError)}
+        onClose={() => setApplyError("")}
+        title="Application Blocked"
+        message={applyError}
+      />
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-4 left-0 right-0 flex justify-center z-50 pointer-events-none">
